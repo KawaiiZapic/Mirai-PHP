@@ -1,0 +1,17 @@
+{
+    "name": "kawaiizapic/mirai-php",
+    "description": "A PHP SDK for Mirai based on Swoole & PHP7.",
+    "type": "library",
+    "require": {
+        "php": ">=7",
+		"ext-swoole": ">=4.4"
+    },
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Zapic",
+            "email": "zapic233@qq.com"
+        }
+    ],
+    "minimum-stability": "dev"
+}
