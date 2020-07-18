@@ -16,7 +16,7 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
   * [ ] ...
   
 * [ ] Docs
-  * [ ] 主体
+  * [x] 主体
   * [ ] 事件
   * [ ] 消息与消息链
 

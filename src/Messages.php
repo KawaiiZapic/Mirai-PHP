@@ -1,15 +1,33 @@
 <?php
+/**
+ * PHP SDK for Mirai HTTP API
+ *
+ * @author Zapic <kawaiizapic@zapic.cc>
+ * @license AGPL-3.0
+ * @version beta-0.0.1
+ *
+ * @package Mirai
+ *
+ */
+
 namespace Mirai;
 
 class MessageChain implements \Countable, \Iterator,\ArrayAccess {
     private $_chain;
     private $_pos;
-    public function __construct($arr = []) {
+    /**
+     * 
+     * Create a message chain
+     * 
+     * @param array $arr Message chain array
+     * 
+     * @throws IllegalParamsException Maybe there is a not vaild object in chain
+     * 
+     * @return void
+     * 
+     */
+    public function __construct(array $arr = []) {
         $this->_pos = 0;
-        if (!is_array($arr)) {
-            $t = gettype($arr);
-            throw new IllegalParamsException("Need an array,but a(n) {$t} given.");
-        }
         foreach ($arr as &$obj) {
             if(gettype($obj) == "string"){
                 $obj = new PlainMessage($obj);
@@ -23,6 +41,14 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
         }
         $this->_chain = $arr;
     }
+
+    /**
+     * 
+     * Stringify chain
+     * 
+     * @return string Stringify chain
+     * 
+     */
 
     public function __toString():string {
         $str = '';
@@ -70,6 +96,16 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
         }
         return $str;
     }
+
+    /**
+     * 
+     * Check message is vaild
+     * 
+     * @param mixed $obj Message object
+     * 
+     * @return bool Is vaild
+     * 
+     */
 
     private static function __checkMessageVaild($obj):bool {
         switch ($obj->type) {

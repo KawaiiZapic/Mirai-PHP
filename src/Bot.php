@@ -502,7 +502,15 @@ class Bot {
     }
 
     /**
-     * Register a command 
+     * Register a command
+     * 
+     * @param string $name Name of command
+     * @param array $alias Alias of command
+     * @param string $desc Description of command
+     * @param string $usage Usage of command
+     * 
+     * @return mixed API Response
+     * 
      */
 
     public function registerCommand(string $name, array $alias = [], string $desc = "", string $usage = null) {
@@ -514,6 +522,17 @@ class Bot {
             "usage" => $usage,
         ]);
     }
+
+    /**
+     * Send command to console
+     * 
+     * @param string $name Name of command
+     * @param array $args Arg of command
+     * 
+     * @return mixed API Response
+     * 
+     */
+
     public function sendCommand(string $name, array $args = []) {
         return $this->callBotAPI("/command/send", [
             "authKey" => $this->_authKey,
@@ -521,10 +540,27 @@ class Bot {
             "args" => $args,
         ]);
     }
+
+    /**
+     * Get managers of bot
+     * 
+     * @return mixed API Response
+     * 
+     */
     public function getManagers() {
         return $this->callBotAPI("managers?qq={$this->_qq}");
     }
 
+    /**
+     * 
+     * Event factory
+     * 
+     * @param mixed $frame Data of event
+     * 
+     * @return mixed Event instance of event
+     * 
+     */
+    
     public function EventFactory($frame) {
         $msgEvt = ["GroupMessage", "FriendMessage", "TempMessage"];
         if (in_array($frame->type, $msgEvt)) {
