@@ -569,4 +569,24 @@ class Bot {
         $evt = "\\Mirai\\" . $frame->type;
         return new $evt($frame, $this);
     }
+
+    /**
+     * 
+     * Listen to commands
+     * 
+     * @throws UpgradeFailedError Failed to upgrade connection to Websocket.
+     * 
+     * @return \Swoole\Coroutine\Http\Client Connection to Websocket
+     * 
+     */
+    
+    public function listenCommand():\Swoole\Coroutine\Http\Client{
+        $client = new \Swoole\Coroutine\Http\Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
+        $ret = $client->upgrade("/commnad?authKey={$this->_authKey}");
+        if (!$ret || $this->_conn->statusCode != 101) {
+            throw new UpgradeFailedError("Failed to upgrade connection to Websocket.");
+        }
+        return $client;
+    }
+    
 }

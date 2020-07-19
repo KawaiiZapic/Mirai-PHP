@@ -36,7 +36,7 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
                 $obj = $obj->toObject();
             }
             if (!MessageChain::__checkMessageVaild($obj)) {
-                throw new \Exception("Invaild message in MessageChain.");
+                throw new IllegalParamsException("Invaild message in MessageChain.");
             }
         }
         $this->_chain = $arr;
@@ -181,47 +181,116 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
         }
         return true;
     }
+
+    /**
+     * 
+     * Append a message to chain
+     * 
+     * @param mixed $obj Message to append
+     * 
+     * @throws IllegalParamsException Message is not invaild.
+     * 
+     * @return void
+     * 
+     */
+
     public function append($obj) {
+        if(gettype($obj) == "string"){
+            $obj = new PlainMessage($obj);
+        }
         if ($obj instanceof BaseMessage) {
             $obj = $obj->toObject();
         }
+        if (!MessageChain::__checkMessageVaild($obj)) {
+            throw new IllegalParamsException("Invaild message object.");
+        }
         $this->_chain[] = $obj;
     }
+
+    /**
+     * 
+     * Return the id of message.
+     * If the first object of chain is not a Source Message,function will return -1
+     * 
+     * @return int Id of message
+     * 
+     */
 
     public function getId():int {
         if (isset($this->_chain[0]) && $this->_chain[0]->type == "Source") {
             return $this->_chain[0]->id;
         }
-        return false;
+        return -1;
     }
 
+    /**
+     * 
+     * Prepend a message to chain
+     * 
+     * @throws IllegalParamsException Message is not invaild.
+     * 
+     * @return void
+     *  
+     */
+
     public function prepend($obj) {
+        if(gettype($obj) == "string"){
+            $obj = new PlainMessage($obj);
+        }
         if ($obj instanceof BaseMessage) {
             $obj = $obj->toObject();
+        }
+        if (!MessageChain::__checkMessageVaild($obj)) {
+            throw new IllegalParamsException("Invaild message object.");
         }
         array_unshift($this->_chain, $obj);
     }
 
-    public function remove($index) {
+    /**
+     * 
+     * Remove a object from chain
+     * 
+     * @param int Index of object
+     * 
+     * @return bool Removed or not
+     * 
+     */
+
+    public function remove(int $index):bool {
+        if(!isset($this->_chain[$index])){
+            return false;
+        }
         unset($this->_chain[$index]);
         $this->_chain = array_values($this->_chain);
+        return true;
     }
 
-    public function get($index) {
-        return $this->_chain[$index];
-    }
-    public function set($index,$value) {
-        $this->_chain[$index] = $value;
-    }
+    /**
+     *  Return chain as array
+     * 
+     * @return array Array of chain
+     * 
+     */
+
     public function toArray():array {
         return $this->_chain;
     }
 
-    public function rewind() {
+    // Interface
+
+    public function get($index) {
+        return $this->_chain[$index];
+    }
+
+    public function set($index,$value):void {
+        $this->_chain[$index] = $value;
+    }
+
+    public function rewind():void {
         $this->_pos = 0;
     }
 
-    public function current() {
+    public function current():int {
         return $this->_chain[$this->_pos];
     }
 
@@ -229,7 +298,7 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
         return $this->_pos;
     }
 
-    public function next() {
+    public function next():void {
         $this->_pos++;
     }
 
@@ -240,6 +309,7 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
     public function count():int {
         return count($this->_chain);
     }
+
     public function offsetSet($offset, $value) {
         if(!is_int($offset)){
             return false;
@@ -256,32 +326,65 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
             $this->_chain[$offset] = $value;
         }
     }
+
     public function offsetExists($offset) {
         return isset($this->_chain[$offset]);
     }
+
     public function offsetUnset($offset) {
         unset($this->_chain[$offset]);
     }
+
     public function offsetGet($offset) {
         return isset($this->_chain[$offset]) ? $this->_chain[$offset] : null;
     }
 
 }
-class BaseMessage {
+abstract class BaseMessage {
     protected $_raw;
 
-    private function __construct() {}
+    public function __construct(){}
+
+    /**
+     * 
+     * Get type of message
+     * 
+     * @return string Type of message
+     * 
+     */
 
     public function getType():string {
         return $this->_raw->type;
     }
 
+    /**
+     * 
+     * Return object of message
+     * 
+     * @return stdClass Message object
+     * 
+     */
+
     public function toObject():\stdClass {
         return $this->_raw;
     }
 
+    public function __get($name){
+        return $this->$name;
+    }
+
 }
 class SourceMessage extends BaseMessage {
+
+    /**
+     * 
+     * Source message
+     * 
+     * @param int $id Id of message
+     * @param int $time Timestamp of message(second)
+     * 
+     */
+
     public function __construct(int $id,int $time) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Source";
@@ -289,9 +392,25 @@ class SourceMessage extends BaseMessage {
         $this->_raw->time = $time;
     }
 
+    /**
+     * 
+     * Get timestamp of message
+     * 
+     * @return int Timestamp of message
+     * 
+     */
+
     public function getTime():int {
         return $this->_raw->time;
     }
+
+    /**
+     * 
+     * Get id of message
+     * 
+     * @return int $id Id of message
+     * 
+     */
 
     public function getId():int {
         return $this->_raw->id;
@@ -303,6 +422,19 @@ class SourceMessage extends BaseMessage {
 
 }
 class QuoteMessage extends BaseMessage {
+
+    /**
+     * 
+     * Quote message
+     * If you need to quote a message when you send message,DO NOT append this to chain,use Quote param instead.
+     * 
+     * @param int $id Id of message which is quote
+     * @param array $chain Chain of message which is quote
+     * @param int $sender Sender of message which is quote
+     * @param int $group Group which sender in,if is 0,message is in private chat
+     * 
+     */
+    
     public function __construct(int $id,array $chain,int $sender,int $group = 0) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Quote";
@@ -313,13 +445,26 @@ class QuoteMessage extends BaseMessage {
         $this->_raw->origin = $chain;
     }
 
-    public function toObject():\stdClass {
-        return $this->_raw;
-    }
-
+    /**
+     * 
+     * Get id of message which is quote
+     * 
+     * @return int Id of message which is quote
+     * 
+     */
+    
     public function getId():int {
         return $this->_raw->id;
     }
+    
+    /**
+     * 
+     * Get sender id of message which is quote
+     * 
+     * @return int Id of sender 
+     * 
+     */
+    
     public function getSenderId():int {
         return $this->_raw->senderId;
     }
@@ -333,7 +478,7 @@ class QuoteMessage extends BaseMessage {
         return $this->_raw->origin;
     }
     public function __toString():string{
-        return "[mirai:quote:{$this->_raw->id}:{$this->_raw->senderId}]";
+        return "[mirai:quote:{$this->_raw->id}:{$this->_raw->senderId},{$this->_raw->groupId}]";
     }
 }
 class AtMessage extends BaseMessage {
