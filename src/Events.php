@@ -10,25 +10,66 @@ class BaseEvent {
         $this->_raw = $obj;
         $this->_bot = $bot;
     }
+
+    /**
+     * 
+     * Get event type
+     * 
+     * @return string Event type
+     * 
+     */
+
     public function getType(): string {
         return $this->_raw->type;
     }
+
+    /**
+     * 
+     * Get bot instance 
+     * 
+     * @return \Mirai\Bot Bot instance
+     * 
+     */
+
     public function getBot(): Bot {
         return $this->_bot;
     }
-    protected function Init() {
-    }
-    public function stopPropagation() {
+
+    /**
+     * 
+     * Stop event propagation
+     * 
+     * @return void
+     * 
+     */
+
+    public function stopPropagation():void {
         $this->_prop = false;
     }
+
+    /**
+     * 
+     * Get event propagation status
+     * 
+     * @return bool Propagation status
+     * 
+     */
+
     public function getPropagation(): bool {
         return $this->_prop;
     }
 }
+
 abstract class MessageEvent extends BaseEvent {
-    protected function Init() {
-        $this->_raw->messageChain = new MessageChain($this->_raw->messageChain);
-    }
+
+    /**
+     * 
+     * Get message chain
+     * 
+     * @return \Mirai\MessageChain Message chain
+     * 
+     */
+    
     public function getMessageChain(): MessageChain {
         return new MessageChain($this->_raw->messageChain);
     }

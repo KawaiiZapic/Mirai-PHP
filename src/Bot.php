@@ -462,7 +462,7 @@ class Bot {
      * 
      */
 
-    public function GroupConfig(int $target, string $name, $value = null) {
+    public function groupConfig(int $target, string $name, $value = null) {
         $d = $this->_bot->callBotAPI("/groupConfig", ["target" => $target], "get");
         if ($name == null) {
             return $d;
