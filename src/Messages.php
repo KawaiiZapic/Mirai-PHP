@@ -370,7 +370,7 @@ abstract class BaseMessage {
     }
 
     public function __get($name){
-        return $this->$name;
+        return $this->_raw->$name;
     }
 
 }
@@ -468,25 +468,68 @@ class QuoteMessage extends BaseMessage {
     public function getSenderId():int {
         return $this->_raw->senderId;
     }
+
+    /**
+     * 
+     * Get group which sender of message which is quote in
+     * 
+     * @return int Id of group
+     * 
+     */
+
     public function getGroupId():int {
         return $this->_raw->groupId;
     }
+     
+    /**
+     * 
+     * Get sender id of message which is quote
+     * 
+     * @return int Id of sender 
+     * 
+     */
+
     public function getTargetId():int {
         return $this->_raw->targetId;
     }
+     
+    /**
+     * 
+     * Get message chain which is quote
+     * 
+     * @return array Quote meesage chain
+     * 
+     */
+
     public function getOrigin():array {
         return $this->_raw->origin;
     }
+
     public function __toString():string{
         return "[mirai:quote:{$this->_raw->id}:{$this->_raw->senderId},{$this->_raw->groupId}]";
     }
 }
 class AtMessage extends BaseMessage {
+
+    /**
+     * 
+     * At someone in group
+     * 
+     * @param int $id Target to at
+     * 
+     */
     public function __construct(int $id) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "At";
         $this->_raw->target = $id;
     }
+
+    /**
+     * 
+     * Get id of target
+     * 
+     * @return int Id of target
+     */
 
     public function getTargetId():int {
         return $this->_raw->target;
@@ -498,6 +541,13 @@ class AtMessage extends BaseMessage {
 
 }
 class AtAllMessage extends BaseMessage {
+
+    /**
+     * 
+     * At all message
+     * 
+     */
+
     public function __construct() {
         $this->_raw = new \stdClass;
         $this->_raw->type = "AtAll";
@@ -507,19 +557,46 @@ class AtAllMessage extends BaseMessage {
     }
 }
 class FaceMessage extends BaseMessage {
+
+    /**
+     * 
+     * Face message
+     * One param must not be null at least
+     * 
+     * @param int $id Id of face
+     * @param string $name Name of face
+     * 
+     */
+
     public function __construct(int $id = null,string $name = "") {
         $this->_raw = new \stdClass;
         $this->_raw->faceId = $id;
         $this->_raw->name = $name;
     }
 
+    /**
+     * 
+     * Get id of face
+     * 
+     * @return int Face id
+     */
+
     public function getFaceId():int {
         return $this->_raw->faceId;
     }
 
+    /**
+     * 
+     * Get name of face
+     * 
+     * @return string Face name
+     * 
+     */
+
     public function getName():string {
         return $this->_raw->name;
     }
+
     public function __toString():string{
         $s = empty($this->_raw->id) ? $this->_raw->name : $this->_raw->id;
         return "[mirai:face:{$s}]";
@@ -527,20 +604,50 @@ class FaceMessage extends BaseMessage {
 }
 class PlainMessage extends BaseMessage {
 
+    /**
+     * 
+     * Plain message
+     * If you need send a text message,you can directly pass a string to function or chain instead use this(Incompleted).
+     * 
+     * @param string $text Text of message
+     * 
+     */
+
     public function __construct(string $text) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Plain";
         $this->_raw->text = $text;
     }
 
+    /**
+     * 
+     * Get text of message
+     * 
+     * @return string Message text
+     * 
+     */
+
     public function getText():string {
         return $this->_raw->text;
     }
+
     public function __toString():string{
         return $this->_raw->text;
     }
 }
 class ImageMessage extends BaseMessage {
+
+    /**
+     * 
+     * Image message
+     * One param must not be empty at least
+     * 
+     * @param string $imageId Id of image
+     * @param string $url Url of image
+     * @param string $path Path to image
+     * 
+     */
+
     public function __construct(string $imageId = "",string $url = "",string $path = "") {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Image";
@@ -549,13 +656,36 @@ class ImageMessage extends BaseMessage {
         $this->_raw->path = $path;
     }
 
+    /**
+     * 
+     * Get id of image
+     * 
+     * @return string Image id
+     * 
+     */
+
     public function getImageId():string {
         return $this->_raw->imageId;
     }
 
+    /**
+     * 
+     * Get url of image
+     * 
+     * @return string Image url
+     * 
+     */
+
     public function getUrl():string {
         return $this->_raw->url;
     }
+
+    /**
+     * 
+     * Get path to image
+     * 
+     * @return string Path to image
+     */
 
     public function getPath():string {
         return $this->_raw->path;
@@ -566,6 +696,18 @@ class ImageMessage extends BaseMessage {
     }
 }
 class FlashImageMessage extends ImageMessage {
+    
+    /**
+     * 
+     * Flash image message
+     * One param must not be empty at least
+     * 
+     * @param string $imageId Id of image
+     * @param string $url Url of image
+     * @param string $path Path to image
+     * 
+     */
+
     public function __construct($imageId = "", $url = "", $path = "") {
         $this->_raw = new \stdClass;
         $this->_raw->type = "FlashImage";
@@ -573,63 +715,133 @@ class FlashImageMessage extends ImageMessage {
         $this->_raw->url = $url;
         $this->_raw->path = $path;
     }
+
     public function __toString():string{
         $s = empty($this->_raw->imageId) ? (empty($this->_raw->url) ? "path:" . $this->_raw->path : "url:" . $this->_raw->url) : $this->_raw->imageId;
         return "[mirai:flashimage:{$s}]";
     }
 }
 class XmlMessage extends BaseMessage {
+
+    /**
+     * 
+     * XML card message
+     * 
+     * @param string $xml XML card content
+     * 
+     */
+
     public function __construct(string $xml) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Xml";
         $this->_raw->xml = $xml;
     }
 
+    /**
+     * 
+     * Get XML content of card
+     * 
+     * @return string XML content
+     * 
+     */
+
     public function getXml():string {
         return $this->_raw->xml;
     }
+
     public function __toString():string{
         return "[mirai:xml:{$this->_raw->xml}]";
     }
 }
 class JsonMessage extends BaseMessage {
+
+    /**
+     * 
+     * JSON card message
+     * 
+     * @param string $json Json card content
+     * 
+     */
+
     public function __construct(string $json) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Json";
         $this->_raw->json = $json;
     }
 
+    /**
+     * 
+     * Get JSON content of card
+     * 
+     * @return string JSON Content
+     * 
+     */
+
     public function getJson():string {
         return $this->_raw->json;
     }
+
     public function __toString():string{
         return "[mirai:json:{$this->_raw->json}]";
     }
 }
 class AppMessage extends BaseMessage {
+
+    /**
+     * 
+     * App card message
+     * 
+     * @param string App card content
+     */
     public function __construct($content) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "App";
         $this->_raw->content = $content;
     }
 
+    /**
+     * 
+     * Get App content of card
+     * 
+     * @return string Card content.
+     */
+
     public function getContent():string {
         return $this->_raw->content;
     }
+
     public function __toString():string{
         return "[mirai:app:{$this->_raw->content}]";
     }
 }
 class PokeMessage extends BaseMessage {
-    public function __construct($name) {
+
+    /**
+     * 
+     * Poke message
+     * Allow: Poke, ShowLove, Like, Heartbroken, SixSixSix, FangDaZhao
+     * 
+     * @param string $name Poke name.
+     * 
+     */
+    public function __construct(string $name) {
         $this->_raw = new \stdClass;
         $this->_raw->type = "Poke";
         $this->_raw->xml = $name;
     }
 
+    /**
+     * 
+     * Get name of poke
+     * 
+     * @return string Name of poke 
+     * 
+     */
+
     public function getName():string {
-        return $this->_raw->Name;
+        return $this->_raw->name;
     }
+
     public function __toString():string{
         return "[mirai:poke:{$this->_raw->name}]";
     }
