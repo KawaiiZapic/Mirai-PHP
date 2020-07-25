@@ -31,10 +31,10 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
   * [ ] 命令注册与监听
   * [ ] ...
   
-* [ ] Docs
+* [x] Docs
   * [x] 主体
   * [x] 事件
-  * [ ] 消息与消息链
+  * [x] 消息与消息链
 
 ## 何时完成?  
 等死吧,这辈子都写不完的.

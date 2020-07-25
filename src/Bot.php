@@ -473,12 +473,13 @@ class Bot {
         }
         return $d->$name;
     }
+    
     /**
      * 
      * Get/Set info of group member
      * This is a jQuery-like function
-     * If the thrid param is null,function will return the info vale
-     * If the thrid param is not null,the value will be save to member info
+     * If the last param is null,function will return the info vale
+     * If the last param is not null,the value will be save to member info
      * 
      * @param int $target Group which target member in
      * @param int $qq Target member
