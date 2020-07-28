@@ -175,6 +175,8 @@ class Bot {
     /**
      * Close connection to HTTP API
      *
+     * @throws Exception Unknown error occured while try to colse connection to API.
+     * 
      * @return void
      *
      */
@@ -182,6 +184,10 @@ class Bot {
     public function ShutDown(): void {
         $this->_conn->closeNormal = true;
         $this->_conn->close();
+        $ret = $this->callBotAPI("/release",['qq'=>$this->_qq]);
+        if(!$ret->code == 0){
+            throw new \Exception("Unknown error occured while try to colse connection to API.");
+        }
     }
 
     /**
@@ -189,13 +195,16 @@ class Bot {
      *
      * @param string $type Type of image,"friend" or "group".
      * @param string $file Path to image.
+     * @param string $timeout Timeout for wating API response.
      *
      * @throws FileNotFoundException Image file not found
+     * @throws TimeoutException API doesn't send response before timeout
      *
      * @return mixed API Response.
+     * 
      */
 
-    public function uploadImage(string $type, string $file) {
+    public function uploadImage(string $type, string $file,float $timeout = 10) {
         if (!file_exists($file) || !is_file($file)) {
             throw new FileNotFoundException("File not found.");
         }
@@ -204,6 +213,7 @@ class Bot {
         $client->setHeaders([
             "Content-Type" => "multipart/form-data; boundary={$boundary};",
         ]);
+        $client->set(['timeout' => $timeout]);
         $client->setMethod("POST");
         $body = "--{$boundary}\r\nContent-Disposition: form-data; name=\"sessionKey\"\r\n\r\n{$this->_session}\r\n";
         $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\n{$type}\r\n";
@@ -212,22 +222,31 @@ class Bot {
         $client->setData($body);
         $client->execute("/uploadImage");
         $client->close();
+        if($client->statusCode == -2){
+            throw new TimeoutException("API doesn't send response in {$timeout}s.");
+        }
         return json_decode($client->body);
     }
 
     /**
-     * Send image to target by URL
+     * 
+     * Send image to target by URL.
+     * 
+     * THIS FUNCTION IS NOT RECOMMEND BY DEFAULT,USE "uploadImage" INSTEAD.
+     * 
      * If $qq is not null,image will send to private chat.
-     * If $gorup is not null,image will send to group chat.
-     * If both $group and $target is not null,image will send to temp chat.
+     * If $gorup is not null,image will send to group chat.  
+     * If both $group and $target is not null,image will send to temp chat. 
      *
-     * @param string $urls Url of image
+     * @param string $urls Url of image.
      * @param int $qq Target friend user.
      * @param int $group Target group.
      * @param int $target Target group user.
      *
      * @return mixed API Response.
+     * 
      */
+
     public function sendImageMessage(string $urls, int $qq = null, int $group = null, int $target = null) {
         $pre = [];
         if (!is_null($qq)) {
@@ -244,17 +263,22 @@ class Bot {
     }
 
     /**
+     * 
      * Send messgae to friend
      *
      * @param int $target Target user to recive messgae.
      * @param array $chain Message chain to send.
      * @param int $quote Specify a Message Id to quote.
      *
-     * @return mixed API Response.
+     * @throws TargetNotFoundException Target is not found.
+     * @throws MessageTooLongException Message is too long.
+     * @throws Exception Unknown error occured.
+     * 
+     * @return int Message id.
      *
      */
 
-    public function sendFriendMessage(int $target, array $chain, int $quote = null) {
+    public function sendFriendMessage(int $target, array $chain, int $quote = null):int {
         $pre = [
             "target" => $target,
             "messageChain" => $chain,
@@ -262,22 +286,37 @@ class Bot {
         if (!is_null($quote)) {
             $pre['quote'] = $quote;
         }
-        return $this->callBotAPI("/sendFriendMessage", $pre);
+        $ret = $this->callBotAPI("/sendFriendMessage", $pre);
+        switch($ret->code){
+            case 0:
+                return $ret->messageId;
+            case 5:
+                throw new TargetNotFoundException("Can't send message to {$target}: {$ret->message}");
+            case 30: 
+                throw new MessageTooLongException("Can't send message to {$target}: {$ret->message}");
+            default:
+                throw new \Exception("Can't send message to {$target}:{$ret->code}: {$ret->message}");
+        }
     }
 
     /**
-     * Send message to temp user
+     * 
+     * Send message to temp user.
      *
-     * @param int $qq Target user
-     * @param int $group Chat source group
-     * @param array $chain Message chain to send
-     * @param int quote Specify a Message Id to quote
+     * @param int $qq Target user.
+     * @param int $group Chat source group.
+     * @param array $chain Message chain to send.
+     * @param int quote Specify a Message Id to quote.
+     * 
+     * @throws TargetNotFoundException Target is not found.
+     * @throws MessageTooLongException Message is too long.
+     * @throws Exception Unknown error occured.
      *
-     * @return mixed API response.
+     * @return int Message id.
      *
      */
 
-    public function sendTempMessage(int $qq, int $group, array $chain, int $quote = null) {
+    public function sendTempMessage(int $qq, int $group, array $chain, int $quote = null):int {
         $pre = [
             "qq" => $qq,
             "group" => $group,
@@ -286,20 +325,36 @@ class Bot {
         if (!is_null($quote)) {
             $pre['quote'] = $quote;
         }
-        return $this->callBotAPI("/sendTempMessage", $pre);
+        $ret =  $this->callBotAPI("/sendTempMessage", $pre);
+        switch($ret->code){
+            case 0:
+                return $ret->messageId;
+            case 5:
+                throw new TargetNotFoundException("Can't send message to {$qq} @ {$group}: {$ret->message}");
+            case 30: 
+                throw new MessageTooLongException("Can't send message to {$qq} @ {$group}: {$ret->message}");
+            default:
+                throw new \Exception("Can't send message to {$qq} @ {$group}:{$ret->code}: {$ret->message}");
+        }
     }
 
     /**
      *
-     * Send message to group
+     * Send message to group.
      *
-     * @param int $target Target group
-     * @param array $chain Message chain to send
-     * @param int $quote Specify a Message Id to quote
+     * @param int $target Target group.
+     * @param array $chain Message chain to send.
+     * @param int $quote Specify a Message Id to quote.
+     * 
+     * @throws TargetNotFoundException Target is not found.
+     * @throws MessageTooLongException Message is too long.
+     * @throws BotMutedException Bot has been mute in this group.
+     * @throws Exception Unknown error occured.
      *
-     * @return mixed API Response
+     * @return int Message id.
      *
      */
+
     public function sendGroupMessage(int $target, array $chain, int $quote = null) {
         $pre = [
             "target" => $target,
@@ -308,20 +363,43 @@ class Bot {
         if (!is_null($quote)) {
             $pre['quote'] = $quote;
         }
-        return $this->callBotAPI("/sendGroupMessage", $pre);
+        $ret = $this->callBotAPI("/sendGroupMessage", $pre);
+        switch($ret->code){
+            case 0:
+                return $ret->messageId;
+            case 5:
+                throw new TargetNotFoundException("Can't send message to {$target}: {$ret->message}");
+            case 20:
+                throw new BotMutedException("Can't send message to {$target}:{$ret->message}");
+            case 30: 
+                throw new MessageTooLongException("Can't send message to {$target}: {$ret->message}");
+            default:
+                throw new \Exception("Can't send message to {$target}:{$ret->code}: {$ret->message}");
+        }
     }
 
     /**
      *
-     * Recall a message
+     * Recall a message.
      *
-     * @param int $id ID of message which need recall
+     * @param int $id ID of message which need recall.
      *
-     * @return mixed API response
+     * @throws PermissionDeniedException Bot has not permission to recall this message.
+     * @throws Exception Unknown error occured.
+     * 
+     * @return bool Recall successfully or not.
      *
      */
-    public function recallMessage(int $id) {
-        return $this->callBotAPI("/recall", ["target" => $id]);
+    public function recallMessage(int $id):bool {
+        $ret = $this->callBotAPI("/recall", ["target" => $id]);
+        switch($ret->code){
+            case 0:
+                return true;
+            case 20:
+                throw new PermissionDeniedException("Can't recall message {$id}:{$ret->message}");
+            default:
+                throw new \Exception("Can't recall message {$id}:{$ret->code}: {$ret->message}");
+        }
     }
 
     /**
