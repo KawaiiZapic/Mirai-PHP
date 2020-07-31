@@ -65,7 +65,7 @@ class Bot {
 		if ($ret) {
 			$ret = json_decode($client->body);
 			if ($ret->code != 0) {
-				throw new InvaildKeyException("Invaild AuthKey.");
+				throw self::ExceptionFactory($ret,"Failed to auth:");
 			} else {
 				$this->_session = $ret->session;
 			}
@@ -76,12 +76,20 @@ class Bot {
 		if ($ret) {
 			$ret = json_decode($client->body);
 			if ($ret->code != 0) {
-				throw new BindFailedException("Failed to bind seesion to QQ({$this->_qq}):{$ret->msg}.");
+				throw self::ExceptionFactory($ret,"Failed to bind seesion to QQ({$this->_qq}):");
 			}
 		} else {
 			throw new ConnectFaliedError("Failed to connect to HTTP API.");
 		}
-		$this->callBotAPI("/config", ["enableWebsocket" => true]);
+		$ret = $this->callBotAPI("/config", ["enableWebsocket" => true]);
+		if ($ret) {
+			$ret = json_decode($client->body);
+			if ($ret->code != 0) {
+				throw self::ExceptionFactory($ret,"Failed to enable websocket:");
+			}
+		} else {
+			throw new ConnectFaliedError("Failed to connect to HTTP API.");
+		}
 	}
 
 	/**
@@ -648,6 +656,7 @@ class Bot {
 	}
 
 	/**
+
 	 * Register a command
 	 *
 	 * @param string $name Name of command
@@ -714,6 +723,31 @@ class Bot {
 		}
 		$evt = "\\Mirai\\" . $frame->type;
 		return new $evt($frame, $this);
+	}
+
+	public static function ExceptionFactory($rsp,$pre=""):\Throwable{
+		switch($rsp->code){
+			case 1:
+				return new InvaildKeyException("{$pre}{$rsp->msg}");
+			case 2:
+				return new BotNotFoundException("{$pre}{$rsp->msg}");
+			case 3:
+				return new SessionNotExistsException("{$pre}{$rsp->msg}");
+			case 4:
+				return new SessionNotVerifiedException("{$pre}{$rsp->msg}");
+			case 5:
+				return new TargetNotFoundException("{$pre}{$rsp->msg}");
+			case 10:
+				return new PermissionDeniedException("{$pre}{$rsp->msg}");
+			case 20:
+				return new BotMutedException("{$pre}{$rsp->msg}");
+			case 30:
+				return new MessageTooLongException("{$pre}{$rsp->msg}");
+			case 400:
+				return new InvaildRequestException("{$pre}{$rsp->msg}");
+			default:
+			return new \Exception("{$pre}:Unknown error,server return {$rsp->msg}(Code {$rsp->code})");
+		}
 	}
 
 	/**
