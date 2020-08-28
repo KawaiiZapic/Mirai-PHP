@@ -2,13 +2,15 @@
 
 namespace Mirai;
 
+use Exception;
+
 class BaseEvent {
     protected $_raw;
     protected $_bot;
     private $_prop = true;
     public final function __construct($obj, &$bot) {
         $this->_raw = $obj;
-        $this->_bot = $bot;
+        $this->_bot = &$bot;
     }
 
     /**
@@ -27,7 +29,7 @@ class BaseEvent {
      *
      * Get bot instance
      *
-     * @return \Mirai\Bot Bot instance
+     * @return Bot Bot instance
      *
      */
 
@@ -66,7 +68,7 @@ abstract class MessageEvent extends BaseEvent {
      *
      * Get message chain
      *
-     * @return \Mirai\MessageChain Message chain
+     * @return MessageChain Message chain
      *
      */
 
@@ -86,7 +88,7 @@ abstract class MessageEvent extends BaseEvent {
 
     /**
      *
-     * Quick reply to this messgae
+     * Quick reply to this message
      *
      * @param mixed $msg Message to reply,accept String,MessageChain and Array.
      *
@@ -102,7 +104,7 @@ class GroupMessageEvent extends MessageEvent {
      *
      * Get group object.
      *
-     * @return \Mirai\Group Group object.
+     * @return Group Group object.
      *
      */
 
@@ -112,7 +114,7 @@ class GroupMessageEvent extends MessageEvent {
 
     /**
      *
-     * Quick reply to this messgae
+     * Quick reply to this message
      *
      * @param mixed $msg Message to reply,accept String,MessageChain and Array.
      *
@@ -122,7 +124,7 @@ class GroupMessageEvent extends MessageEvent {
 
     public function quickReply($msg, bool $quote = false) {
         if (gettype($msg) == "string") {
-            $msg = new \Mirai\MessageChain([$msg]);
+            $msg = new MessageChain([$msg]);
         }
         $msg = $msg instanceof MessageChain ? $msg->toArray() : $msg;
         $pre = [
@@ -138,7 +140,7 @@ class GroupMessageEvent extends MessageEvent {
     /**
      *  Recall this message
      *
-     * @return API Response
+     * @return mixed API Response
      *
      */
 
@@ -162,7 +164,7 @@ class GroupMessageEvent extends MessageEvent {
      *
      * Get sender object
      *
-     * @return mixed API reponse
+     * @return mixed API response
      *
      */
 
@@ -174,7 +176,7 @@ class FriendMessageEvent extends MessageEvent {
 
     /**
      *
-     * Quick reply to this messgae
+     * Quick reply to this message
      *
      * @param mixed $msg Message to reply,accept String,MessageChain and Array.
      * @param bool $quote Should quote this message to reply or not
@@ -198,7 +200,7 @@ class FriendMessageEvent extends MessageEvent {
      *
      * Get sender object
      *
-     * @return \Mirai\PrivateUser Sender object
+     * @return PrivateUser Sender object
      *
      */
 
@@ -222,7 +224,7 @@ class TempMessageEvent extends MessageEvent {
 
     /**
      *
-     * Quick reply to this messgae
+     * Quick reply to this message
      *
      * @param mixed $msg Message to reply,accept String,MessageChain and Array.
      * @param bool $quote Should quote this message to reply or not
@@ -233,8 +235,8 @@ class TempMessageEvent extends MessageEvent {
 
     public function quickReply($msg, bool $quote = false) {
         $pre = [
-            "qq" => $this->getSender()->id,
-            "group" => $this->getGroup()->id,
+            "qq" => $this->getSender()->getId(),
+            "group" => $this->getGroup()->getId(),
             "messageChain" => $msg->toArray(),
         ];
         if ($quote) {
@@ -286,7 +288,7 @@ class BotMuteEvent extends BotEvent {
      *
      * Get mute operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return \Mirai\GroupUser Operator object
      *
      */
 
@@ -310,7 +312,7 @@ class BotMuteEvent extends BotEvent {
      *
      * Get mute operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return \Mirai\GroupUser Operator object
      *
      */
 
@@ -336,7 +338,7 @@ class BotUnmuteEvent extends BotEvent {
      *
      * Get mute operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return \Mirai\GroupUser Operator object
      *
      */
 
@@ -453,7 +455,7 @@ abstract class RecallEvent extends BaseEvent {
      *
      * Get recall operator object
      *
-     * @return \Mirai\User Opeartor object
+     * @return \Mirai\User Operator object
      *
      */
 
@@ -465,7 +467,7 @@ class GroupRecallEvent extends RecallEvent {
      *
      * Get recall operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return \Mirai\GroupUser Operator object
      *
      */
 
@@ -479,7 +481,7 @@ class FriendRecallEvent extends RecallEvent {
      *
      * Get recall operator object
      *
-     * @return \Mirai\PrivateUser Opeartor object
+     * @return \Mirai\PrivateUser Operator object
      *
      */
 
@@ -547,18 +549,18 @@ class GroupAllowConfessTalkEvent extends GroupChangeEvent {
     /**
      *
      * DO NOT CALL THIS FUNCTION
-     * USE "isByBot" INSTWAD
+     * USE "isByBot" INSTEAD
      *
      */
 
     public function getOperator(): GroupUser {
-        throw new \Exception("Illeage Called function getOperator,call \"isByBot\" instead.");
-        return new GroupUser(null, null);
+        throw new Exception("Illegal Called function getOperator,call \"isByBot\" instead.");
+        return new GroupUser(null,$this);
     }
 
     /**
      *
-     * Chech operation is by bot
+     * Check operation is by bot
      *
      * @return bool Is by bot or not
      *
@@ -621,7 +623,7 @@ class MemberMuteEvent extends GroupEvent {
      *
      * Get mute operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return GroupUser Operator object
      *
      */
 
@@ -645,7 +647,7 @@ class MemberMuteEvent extends GroupEvent {
      *
      * Get mute operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return \Mirai\GroupUser Operator object
      *
      */
 
@@ -671,7 +673,7 @@ class MemberUnmuteEvent extends GroupEvent {
      *
      * Get mute operator object
      *
-     * @return \Mirai\GroupUser Opeartor object
+     * @return \Mirai\GroupUser Operator object
      *
      */
 
@@ -783,7 +785,7 @@ class NewFriendRequestEvent extends RequestEvent {
     /**
      * 
      * Deny & block the request.
-     * Bot will not recive request from this sender any more
+     * Bot will not receive request from this sender any more
      * 
      * @param string $msg Reply to the request
      * 
@@ -861,7 +863,7 @@ class MemberJoinRequestEvent extends RequestEvent {
     /**
      * 
      * Deny & block the request.
-     * Bot will not recive request from this sender any more
+     * Bot will not receive request from this sender any more
      * 
      * @param string $msg Reply to the request
      * 
@@ -888,7 +890,7 @@ class MemberJoinRequestEvent extends RequestEvent {
     /**
      * 
      * Ignore & block the request
-     * Bot will not recive request from this sender any more
+     * Bot will not receive request from this sender any more
      * 
      * @return mixed API response
      * 

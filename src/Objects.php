@@ -390,7 +390,7 @@ class PrivateUser extends User {
      * Private user
      * 
      * @param mixed $dat User data,accept int and object
-     * @param \Mirai\Bot Bot object
+     * @param Bot Bot object
      * 
      */
 
@@ -415,7 +415,7 @@ class PrivateUser extends User {
      * 
      */
 
-    public function sendMessage($msg,$quote = null){
+    public function sendMessage($msg,int $quote = null){
         $msg = $msg instanceof MessageChain ? $msg->toArray() : $msg;
         return $this->_bot->sendFriendMessage($this->_user->id,$this->_user->group->id,$msg,$quote);
     }

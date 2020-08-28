@@ -36,7 +36,7 @@ class MessageChain implements \Countable, \Iterator,\ArrayAccess {
                 $obj = $obj->toObject();
             }
             if (!MessageChain::__checkMessageVaild($obj)) {
-                throw new IllegalParamsException("Invaild message in MessageChain.");
+                throw new IllegalParamsException("Invalid message in MessageChain.");
             }
         }
         $this->_chain = $arr;
