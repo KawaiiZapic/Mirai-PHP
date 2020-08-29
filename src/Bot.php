@@ -54,20 +54,20 @@ class Bot {
 	 *
 	 * Login to HTTP API
 	 *
-	 * @throws InvaildRespondException Server may not be a Mirai HTTP API
-	 * @throws ConnectFaliedError Failed to connect to HTTP API
+	 * @throws InvalidRespondException Server may not be a Mirai HTTP API
+	 * @throws ConnectFailedError Failed to connect to HTTP API
 	 * @throws Exception Exceptions when trying to login into HTTP API
 	 *
-	 * @return void
+	 * @return bool Login successfully
 	 *
 	 */
 
-	private function login(): void {
+	private function login(): bool {
 		$client = &$this->_conn;
 		$client->get("/about");
 		$info = json_decode($client->body);
 		if (!$info || $info->code != 0) {
-			throw new InvaildRespondException("Invalid respond,it doesn't seem like a valid HTTP API.");
+			throw new InvalidRespondException("Invalid respond,it doesn't seem like a valid HTTP API.");
 		}
 		$client->post("/auth", json_encode(["authKey" => $this->_authKey]));
 		if ($client->statusCode == 200) {
@@ -78,7 +78,7 @@ class Bot {
 				$this->_session = $ret->session;
 			}
 		} else {
-			throw new ConnectFaliedError("Failed to connect to HTTP API.");
+			throw new ConnectFailedError("Failed to connect to HTTP API.");
 		}
 		$client->post("/verify", json_encode(["sessionKey" => $this->_session, "qq" => $this->_qq]));
 		if ($client->statusCode == 200) {
@@ -87,7 +87,7 @@ class Bot {
 				throw self::ExceptionFactory($ret,"Failed to bind session to QQ({$this->_qq}):");
 			}
 		} else {
-			throw new ConnectFaliedError("Failed to connect to HTTP API.");
+			throw new ConnectFailedError("Failed to connect to HTTP API.");
 		}
 		$ret = $this->callBotAPI("/config", ["enableWebsocket" => true]);
 		if ($ret) {
@@ -96,8 +96,9 @@ class Bot {
 				throw self::ExceptionFactory($ret,"Failed to enable websocket:");
 			}
 		} else {
-			throw new ConnectFaliedError("Failed to connect to HTTP API.");
+			throw new ConnectFailedError("Failed to connect to HTTP API.");
 		}
+		return true;
 	}
 
 	/**
@@ -111,17 +112,17 @@ class Bot {
 	 * @throws UpgradeFailedError Failed to upgrade connection to Websocket
 	 * @throws Error Some unknown error occurred
 	 *
-	 * @return void
+	 * @return int Coroutine container id
 	 *
 	 */
 
-	public function setEventHandler(callable $callback): void {
+	public function setEventHandler(callable $callback): int {
 		$this->_conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
 		$ret = $this->_conn->upgrade("/all?sessionKey={$this->_session}");
 		if (!$ret || $this->_conn->statusCode != 101) {
 			throw new UpgradeFailedError("Failed to upgrade connection to Websocket.");
 		}
-		go(function () use ($callback) {
+		return go(function () use ($callback) {
 			while (true) {
 				$frame = $this->_conn->recv();
 				if ($frame) {
@@ -199,17 +200,18 @@ class Bot {
 	 *
 	 * @throws Exception Unknown error occurred while try to close connection to API
 	 *
-	 * @return void
+	 * @return bool Shutdown successfully
 	 *
 	 */
 
-	public function ShutDown(): void {
+	public function ShutDown(): bool {
 		$this->_conn->closeNormal = true;
 		$this->_conn->close();
 		$ret = $this->callBotAPI("/release", ['qq' => $this->_qq]);
 		if (!$ret->code == 0) {
 			throw new Exception("Unknown error occurred while try to close connection to API.");
 		}
+		return true;
 	}
 
 	/**
@@ -223,7 +225,7 @@ class Bot {
 	 * @throws FileNotFoundException Image file not found
 	 * @throws TimeoutException API doesn't send response before timeout
 	 *
-	 * @return mixed API Response.
+	 * @return mixed API Response
 	 *
 	 */
 
@@ -290,18 +292,23 @@ class Bot {
 	 * Send message to friend
 	 *
 	 * @param int $target Target user to receive message
-	 * @param array $chain Message chain to send
+	 * @param array|MessageChain|string $chain Message chain to send
 	 * @param int|null $quote Specify a Message Id to quote
 	 *
+	 * @throws IllegalParamsException MessageChain is not valid
 	 * @throws TargetNotFoundException Target is not found
 	 * @throws MessageTooLongException Message is too long
 	 * @throws Exception Unknown error occurred
 	 *
-	 * @return int Message id.
+	 * @return int Message id
 	 *
 	 */
 
-	public function sendFriendMessage(int $target, array $chain, int $quote = null): int {
+	public function sendFriendMessage(int $target, $chain, int $quote = null): int {
+		$chain = gettype($chain) == "string" ? [new PlainMessage($chain)] : ($chain instanceof MessageChain ? (array)$chain : $chain);
+		if(!is_array($chain)){
+			throw new IllegalParamsException("Only accept string or array,but something else given.");
+		}
 		$pre = [
 			"target" => $target,
 			"messageChain" => $chain,
@@ -318,13 +325,14 @@ class Bot {
 	
 	/**
 	 *
-	 * Send message to temp user.
+	 * Send message to temp user
 	 *
-	 * @param int $qq Target user.
-	 * @param int $group Chat source group.
-	 * @param array $chain Message chain to send.
-	 * @param int|null $quote
+	 * @param int $qq Target user
+	 * @param int $group Chat source group
+	 * @param array|MessageChain|string $chain Message chain to send
+	 * @param int|null $quote Specify a Message Id to quote
 	 *
+	 * @throws IllegalParamsException MessageChain is not valid
 	 * @throws MessageTooLongException Message is too long
 	 * @throws TargetNotFoundException Target is not found
 	 * @throws Exception Unknown error occurred
@@ -333,7 +341,8 @@ class Bot {
 	 *
 	 */
 
-	public function sendTempMessage(int $qq, int $group, array $chain, int $quote = null): int {
+	public function sendTempMessage(int $qq, int $group, $chain, int $quote = null): int {
+		$chain = gettype($chain) == "string" ? [new PlainMessage($chain)] : ($chain instanceof MessageChain ? (array)$chain : $chain);
 		$pre = [
 			"qq" => $qq,
 			"group" => $group,
@@ -351,12 +360,13 @@ class Bot {
 	
 	/**
 	 *
-	 * Send message to group.
+	 * Send message to group
 	 *
-	 * @param int $target Target group.
-	 * @param array $chain Message chain to send.
-	 * @param int $quote Specify a Message Id to quote.
+	 * @param int $target Target group
+	 * @param array|MessageChain|string $chain Message chain to send
+	 * @param int|null $quote Specify a Message Id to quote
 	 *
+	 * @throws IllegalParamsException MessageChain is not valid
 	 * @throws TargetNotFoundException Target is not found
 	 * @throws MessageTooLongException Message is too long
 	 * @throws BotMutedException Bot has been mute in this group
@@ -366,7 +376,8 @@ class Bot {
 	 *
 	 */
 
-	public function sendGroupMessage(int $target, array $chain, int $quote): int {
+	public function sendGroupMessage(int $target, $chain, int $quote = null): int {
+		$chain = gettype($chain) == "string" ? [new PlainMessage($chain)] : ($chain instanceof MessageChain ? (array)$chain : $chain);
 		$pre = [
 			"target" => $target,
 			"messageChain" => $chain,
@@ -387,7 +398,7 @@ class Bot {
 	 *
 	 * @param int $id ID of message which need recall.
 	 *
-	 * @throws PermissionDeniedException Bot has not permission to recall this message
+	 * @throws PermissionDeniedException Bot has no permission to recall this message
 	 * @throws Exception Unknown error occurred
 	 *
 	 * @return bool Recall successfully or not
@@ -447,7 +458,7 @@ class Bot {
 	 * @param int $target Target group
 	 * 
 	 * @throws TargetNotFoundException Target group not found
-	 * @throws PermissionDeniedException Bot has not permission to do this
+	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws Exception Unknown error occurred
 	 *
 	 * @return bool Mute successfully or not
@@ -469,7 +480,7 @@ class Bot {
 	 * @param int $target Target group
 	 * 
 	 * @throws TargetNotFoundException Target group not found
-	 * @throws PermissionDeniedException Bot has not permission to do this
+	 * @throws PermissionDeniedException Bot has no permission to do this
      *
 	 * @throws Exception Unknown error occurred
 	 * 
@@ -494,7 +505,7 @@ class Bot {
 	 * @param int $time Mute time,default 0
 	 *
 	 * @throws TargetNotFoundException Target group not found
-	 * @throws PermissionDeniedException Bot has not permission to do this
+	 * @throws PermissionDeniedException Bot has no permission to do this
      * @throws IllegalParamsException
 	 * @throws Exception Unknown error occurred
 	 * 
@@ -518,7 +529,7 @@ class Bot {
 	 * @param int $qq Target member
 	 *
 	 * @throws TargetNotFoundException Target group not found
-	 * @throws PermissionDeniedException Bot has not permission to do this
+	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws Exception Unknown error occurred
 	 * 
 	 * @return bool Unmute successfully or not
@@ -542,7 +553,7 @@ class Bot {
      * @param string $msg Kick message
 	 *
 	 * @throws TargetNotFoundException Target group not found
-	 * @throws PermissionDeniedException Bot has not permission to do this
+	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws Exception Unknown error occurred
      *
      * @return bool Kick successfully or not
@@ -564,7 +575,7 @@ class Bot {
      * @param int $target Group to leave
      *
 	 * @throws TargetNotFoundException Target group not found
-	 * @throws PermissionDeniedException Bot has not permission to do this
+	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws Exception Unknown error occurred
 	 *
      * @return bool Leave successfully or not
@@ -755,7 +766,7 @@ class Bot {
 	public static function ExceptionFactory($rsp,string $pre=""):Exception{
 		switch($rsp->code) {
 			case 1:
-				return new InvaildKeyException("{$pre}{$rsp->msg}");
+				return new InvalidKeyException("{$pre}{$rsp->msg}");
 			case 2:
 				return new BotNotFoundException("{$pre}{$rsp->msg}");
 			case 3:
@@ -771,7 +782,7 @@ class Bot {
 			case 30:
 				return new MessageTooLongException("{$pre}{$rsp->msg}");
 			case 400:
-				return new InvaildRequestException("{$pre}{$rsp->msg}");
+				return new InvalidRequestException("{$pre}{$rsp->msg}");
 			default:
 				return new Exception("{$pre}:Unknown error,server return {$rsp->msg}(Code {$rsp->code})");
 		}

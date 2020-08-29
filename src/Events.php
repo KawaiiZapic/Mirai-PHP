@@ -4,11 +4,17 @@ namespace Mirai;
 
 use Exception;
 
+/**
+ * Class BaseEvent
+ *
+ * @package Mirai
+ * @property Bot $_bot
+ */
 class BaseEvent {
     protected $_raw;
     protected $_bot;
     private $_prop = true;
-    public final function __construct($obj, &$bot) {
+    public final function __construct($obj,Bot &$bot) {
         $this->_raw = $obj;
         $this->_bot = &$bot;
     }
@@ -41,12 +47,13 @@ class BaseEvent {
      *
      * Stop event propagation
      *
-     * @return void
+     * @return bool Stop successfully
      *
      */
 
-    public function stopPropagation(): void {
+    public function stopPropagation():bool {
         $this->_prop = false;
+        return true;
     }
 
     /**
@@ -78,9 +85,9 @@ abstract class MessageEvent extends BaseEvent {
 
     /**
      *
-     * Get sender object
+     * Get sender instance
      *
-     * @return \Mirai\User Sender object
+     * @return User Sender instance
      *
      */
 
@@ -90,9 +97,12 @@ abstract class MessageEvent extends BaseEvent {
      *
      * Quick reply to this message
      *
-     * @param mixed $msg Message to reply,accept String,MessageChain and Array.
+     * @param mixed $msg Message to reply,accept String and Array
+	 * @param bool $quote Quote this message to reply or not
      *
-     * @return mixed API response.
+	 * @throws Exception Unknown Error occurred
+	 *
+     * @return int Message id
      *
      */
 
@@ -102,69 +112,73 @@ class GroupMessageEvent extends MessageEvent {
 
     /**
      *
-     * Get group object.
+     * Get group instance
      *
-     * @return Group Group object.
+     * @return Group Group instance
      *
      */
 
     public function getGroup(): Group {
         return new Group($this->_raw->sender->group, $this->_bot);
     }
+	
+	/**
+	 *
+	 * Quick reply to this message
+	 *
+	 * @param array|MessageChain|string $msg Message to reply,accept String,MessageChain and Array
+	 * @param bool $quote Quote this message to reply or not
+	 *
+	 * @throws BotMutedException Bot has been muted in this group
+	 * @throws IllegalParamsException Message chain is not valid
+	 * @throws MessageTooLongException Message too long
+	 * @throws TargetNotFoundException Bot may not in this group anymore
+	 *
+	 * @return int Message id
+	 *
+	 */
 
-    /**
-     *
-     * Quick reply to this message
-     *
-     * @param mixed $msg Message to reply,accept String,MessageChain and Array.
-     *
-     * @return mixed API response.
-     *
-     */
-
-    public function quickReply($msg, bool $quote = false) {
-        if (gettype($msg) == "string") {
-            $msg = new MessageChain([$msg]);
-        }
-        $msg = $msg instanceof MessageChain ? $msg->toArray() : $msg;
-        $pre = [
-            "target" => $this->getGroup()->getId(),
-            "messageChain" => $msg,
-        ];
-        if ($quote) {
-            $pre['quote'] = $this->getMessageChain()->getId();
-        }
-        return $this->_bot->callBotAPI("/sendGroupMessage", $pre);
+    public function quickReply($msg, bool $quote = false):int {
+		$quote = $quote == true ? $this->getMessageChain()->getId() : null;
+        return $this->_bot->sendGroupMessage($this->getGroup()->getId(),$msg,$quote);
     }
+	
+	/**
+	 *
+	 * Recall this message
+	 *
+	 * @throws PermissionDeniedException Bot has no permission to recall this message
+	 *
+	 * @return bool Recall success or not
+	 *
+	 */
 
-    /**
-     *  Recall this message
-     *
-     * @return mixed API Response
-     *
-     */
-
-    public function recallMessage() {
-        return $this->_bot->callBotAPI("/recall", ["target" => $this->getMessageChain()->getId()]);
+    public function recallMessage():bool {
+        return $this->_bot->recallMessage($this->getMessageChain()->getId());
     }
 
     /**
      *
      * Kick message sender
      *
-     * @return mixed API response
+	 * @param string $msg Kick message
+	 *
+	 * @throws TargetNotFoundException User may already leave group
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 *
+     * @return bool Kick successfully or not
      *
      */
 
-    public function kickMember($msg = "") {
-        return $this->_bot->callBotAPI("/kick", ["target" => $this->getGroup()->getId(), "memberId" => $this->getSender()->getId(), "msg" => $msg]);
+    public function kickMember(string $msg = ""): bool {
+        return $this->_bot->kickMember($this->getGroup()->getId(),$this->getSender()->getId(), $msg);
     }
 
     /**
      *
-     * Get sender object
+     * Get sender instance
      *
-     * @return mixed API response
+     * @return GroupUser User instance
      *
      */
 
@@ -178,29 +192,27 @@ class FriendMessageEvent extends MessageEvent {
      *
      * Quick reply to this message
      *
-     * @param mixed $msg Message to reply,accept String,MessageChain and Array.
+     * @param string|MessageChain|array $msg Message to reply,accept String,MessageChain and Array.
      * @param bool $quote Should quote this message to reply or not
+	 *
+	 * @throws IllegalParamsException Message chain is not valid
+	 * @throws MessageTooLongException Message too long
+	 * @throws TargetNotFoundException Bot may not in this group anymore
      *
      * @return mixed API response.
      *
      */
 
-    public function quickReply($msg, bool $quote = false) {
-        $pre = [
-            "target" => $this->getSender()->getId(),
-            "messageChain" => $msg->toArray(),
-        ];
-        if ($quote) {
-            $pre['quote'] = $this->getMessageChain()->getId();
-        }
-        return $this->_bot->callBotAPI("/sendFriendMessage", $pre);
+    public function quickReply($msg, bool $quote = null) {
+    	$quote = $quote == true ? $this->getMessageChain()->getId() : null;
+        return $this->_bot->sendFriendMessage($this->getSender()->getId(),$msg ,$quote);
     }
 
     /**
      *
-     * Get sender object
+     * Get sender instance
      *
-     * @return PrivateUser Sender object
+     * @return PrivateUser Sender instance
      *
      */
 
@@ -212,9 +224,9 @@ class TempMessageEvent extends MessageEvent {
 
     /**
      *
-     * Get group object
+     * Get group instance
      *
-     * @return mixed Group object
+     * @return mixed Group instance
      *
      */
 
@@ -226,23 +238,20 @@ class TempMessageEvent extends MessageEvent {
      *
      * Quick reply to this message
      *
-     * @param mixed $msg Message to reply,accept String,MessageChain and Array.
+     * @param array|string $msg Message to reply,accept String,MessageChain and Array.
      * @param bool $quote Should quote this message to reply or not
      *
+	 * @throws IllegalParamsException Message chain is not valid
+	 * @throws MessageTooLongException Message too long
+	 * @throws TargetNotFoundException Bot may not in this group anymore
+	 *
      * @return mixed API response.
      *
      */
 
     public function quickReply($msg, bool $quote = false) {
-        $pre = [
-            "qq" => $this->getSender()->getId(),
-            "group" => $this->getGroup()->getId(),
-            "messageChain" => $msg->toArray(),
-        ];
-        if ($quote) {
-            $pre['quote'] = $this->getMessageChain()->getId();
-        }
-        return $this->_bot->callBotAPI("/sendTempMessage", $pre);
+        $quote = $quote == true ? $this->getMessageChain()->getId(): -1;
+        return $this->_bot->sendTempMessage($this->getSender()->getId(),$this->getGroup()->getId(),$msg,$quote);
     }
     public function getSender(): PrivateUser {
         return new PrivateUser($this->_raw->sender, $this->_bot);
@@ -286,9 +295,9 @@ class BotMuteEvent extends BotEvent {
 
     /**
      *
-     * Get mute operator object
+     * Get mute operator instance
      *
-     * @return \Mirai\GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -298,9 +307,9 @@ class BotMuteEvent extends BotEvent {
 
     /**
      *
-     * Get group object which bot has been muted
+     * Get group instance which bot has been muted
      *
-     * @return \Mirai\Group Group object
+     * @return Group Group instance
      *
      */
 
@@ -310,9 +319,9 @@ class BotMuteEvent extends BotEvent {
 
     /**
      *
-     * Get mute operator object
+     * Get mute operator instance
      *
-     * @return \Mirai\GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -323,24 +332,24 @@ class BotMuteEvent extends BotEvent {
 class BotUnmuteEvent extends BotEvent {
 
     /**
-     *
-     * Get group object which bot has been muted
-     *
-     * @return \Mirai\Group Group object
-     *
-     */
+	 *
+	 * Get mute operator instance
+	 *
+	 * @return GroupUser Operator instance
+ 	 *
+ 	 */
 
     public function getOperator(): GroupUser {
         return new GroupUser($this->_raw->operator, $this->_bot);
     }
-
-    /**
-     *
-     * Get mute operator object
-     *
-     * @return \Mirai\GroupUser Operator object
-     *
-     */
+	
+	/**
+	 *
+	 * Get group instance which bot has been muted
+	 *
+	 * @return Group Group instance
+	 *
+	 */
 
     public function getGroup(): Group {
         return new Group($this->_raw->group, $this->_bot);
@@ -348,25 +357,26 @@ class BotUnmuteEvent extends BotEvent {
 }
 class BotGroupPermissionChangeEvent extends BotEvent {
 
-    /**
-     *
-     * Get origin permission
-     *
-     * @return string Origin permission
-     *
-     */
-
+	/**
+	 *
+	 * Get current permission
+	 *
+	 * @return string Current permission
+	 *
+	 */
+	
     public function getOrigin(): string {
         return $this->_raw->origin;
     }
-
-    /**
-     *
-     * Get current permission
-     *
-     * @return string Current permission
-     *
-     */
+	
+	
+	/**
+	 *
+	 * Get origin permission
+	 *
+	 * @return string Origin permission
+	 *
+	 */
 
     public function getCurrent(): string {
         return $this->_raw->current;
@@ -376,7 +386,7 @@ class BotGroupPermissionChangeEvent extends BotEvent {
      *
      * Get group which bot permission has been changed
      *
-     * @return \Mirai\Group Group object
+     * @return Group Group instance
      *
      */
 
@@ -388,9 +398,9 @@ class BotJoinGroupEvent extends BotEvent {
 
     /**
      *
-     * Get group object which bot joined
+     * Get group instance which bot joined
      *
-     * @return \Mirai\Group Group object
+     * @return Group Group instance
      *
      */
 
@@ -402,9 +412,9 @@ abstract class BotLeaveEvent extends BotEvent {
 
     /**
      *
-     * Get group object which bot (has been) left
+     * Get group instance which bot (has been) left
      *
-     * @return \Mirai\Group Group object
+     * @return Group Group instance
      *
      */
 
@@ -420,7 +430,7 @@ abstract class RecallEvent extends BaseEvent {
      *
      * Get author of recalled message
      *
-     * @return \Mirai\User User object
+     * @return User User instance
      *
      */
 
@@ -453,9 +463,9 @@ abstract class RecallEvent extends BaseEvent {
 
     /**
      *
-     * Get recall operator object
+     * Get recall operator instance
      *
-     * @return \Mirai\User Operator object
+     * @return User Operator instance
      *
      */
 
@@ -465,9 +475,9 @@ class GroupRecallEvent extends RecallEvent {
 
     /**
      *
-     * Get recall operator object
+     * Get recall operator instance
      *
-     * @return \Mirai\GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -479,9 +489,9 @@ class FriendRecallEvent extends RecallEvent {
 
     /**
      *
-     * Get recall operator object
+     * Get recall operator instance
      *
-     * @return \Mirai\PrivateUser Operator object
+     * @return PrivateUser Operator instance
      *
      */
 
@@ -518,9 +528,9 @@ abstract class GroupChangeEvent extends GroupEvent {
 
     /**
      *
-     * Get target group object
+     * Get target group instance
      *
-     * @return \Mirai\Group Target group object
+     * @return Group Target group instance
      *
      */
 
@@ -530,9 +540,9 @@ abstract class GroupChangeEvent extends GroupEvent {
 
     /**
      *
-     * Get operator object
+     * Get operator instance
      *
-     * @return \Mirai\GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -575,9 +585,9 @@ class MemberJoinEvent extends GroupEvent {
 
     /**
      *
-     * Get joined user object
+     * Get joined user instance
      *
-     * @return \Mirai\GroupUser User object
+     * @return GroupUser User instance
      *
      */
 
@@ -589,9 +599,9 @@ abstract class MemberLeaveEvent extends GroupEvent {
 
     /**
      *
-     * Get left user object
+     * Get left user instance
      *
-     * @return \Mirai\GroupUser User object
+     * @return GroupUser User instance
      *
      */
 
@@ -621,9 +631,9 @@ class MemberMuteEvent extends GroupEvent {
 
     /**
      *
-     * Get mute operator object
+     * Get mute operator instance
      *
-     * @return GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -633,9 +643,9 @@ class MemberMuteEvent extends GroupEvent {
 
     /**
      *
-     * Get group object which user has been muted
+     * Get group instance which user has been muted
      *
-     * @return \Mirai\Group Group object
+     * @return Group Group instance
      *
      */
 
@@ -645,9 +655,9 @@ class MemberMuteEvent extends GroupEvent {
 
     /**
      *
-     * Get mute operator object
+     * Get mute operator instance
      *
-     * @return \Mirai\GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -659,9 +669,9 @@ class MemberUnmuteEvent extends GroupEvent {
     
     /** 
     *
-    * Get group object which user has been muted
+    * Get group instance which user has been muted
     *
-    * @return \Mirai\Group Group object
+    * @return Group Group instance
     *
     */
 
@@ -671,9 +681,9 @@ class MemberUnmuteEvent extends GroupEvent {
 
     /**
      *
-     * Get mute operator object
+     * Get mute operator instance
      *
-     * @return \Mirai\GroupUser Operator object
+     * @return GroupUser Operator instance
      *
      */
 
@@ -709,9 +719,9 @@ abstract class RequestEvent extends BaseEvent {
 
     /**
      * 
-     * Get group object which request from.
+     * Get group instance which request from.
      * 
-     * @return \Mirai\Group Group object
+     * @return Group Group instance
      * 
      */
 

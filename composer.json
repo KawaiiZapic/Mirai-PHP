@@ -3,7 +3,7 @@
     "description": "A PHP SDK for Mirai based on Swoole & PHP7.",
     "type": "library",
     "require": {
-        "php": ">=7.2",
+        "php": ">=7",
         "ext-swoole": ">=4.4",
         "ext-json": "*",
         "ext-sockets": "*"

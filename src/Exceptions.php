@@ -1,53 +1,57 @@
 <?php
 namespace Mirai;
-class IllegalParamsException extends \Exception{}
-class IllegalMessageObjectException extends \Exception{}
+use Error;
+use Exception;
 
-class MiraiException extends \Exception{
-    protected $errcode;
+class IllegalParamsException extends Exception{}
+class IllegalMessageObjectException extends Exception{}
+
+class MiraiException extends Exception{
+    protected $errCode;
     public function getErrCode():int{
-        return $this->errcode;
+        return $this->errCode;
     }
 }
-class InvaildKeyException extends MiraiException{
-    protected $errcode = 1;
+class InvalidKeyException extends MiraiException{
+    protected $errCode = 1;
 }
 
 class BotNotFoundException extends MiraiException{
-    protected $errcode = 2;
+    protected $errCode = 2;
 }
 
 class SessionNotExistsException extends MiraiException{
-    protected $errcode = 3;
+    protected $errCode = 3;
 }
 
 class SessionNotVerifiedException extends MiraiException{
-    protected $errcode = 4;
+    protected $errCode = 4;
 }
 class TargetNotFoundException extends MiraiException{
-    protected $errcode = 5;
+    protected $errCode = 5;
 }
 class PermissionDeniedException extends MiraiException{
-    protected $errcode = 10;
+    protected $errCode = 10;
 }
 class BotMutedException extends MiraiException{
-    protected $errcode = 20;
+    protected $errCode = 20;
 }
 class MessageTooLongException extends MiraiException{
-    protected $errcode = 30;
+    protected $errCode = 30;
 }
 
-class InvaildRequestException extends MiraiException{
-    protected $errcode = 400;
+class InvalidRequestException extends MiraiException{
+    protected $errCode = 400;
 }
 
-class FileNotFoundException extends \Exception{}
-class InvaildRespondException extends \Exception{}
-class BindFailedException extends \Exception{}
-class TimeoutException extends \Exception{}
+class FileNotFoundException extends Exception{}
+class InvalidRespondException extends Exception{}
+class TimeoutException extends Exception{}
+class IllegalOperateException extends Exception{}
 
-class ConnectionError extends \Error{};
+class ConnectionError extends Error{}
 class ConnectionCloseError extends ConnectionError{}
-class ConnectFaliedError extends ConnectionError{}
+class ConnectFailedError extends ConnectionError{}
 class UpgradeFailedError extends ConnectionError{}
-class FetchFailedError extends \Error{}
+class FetchFailedError extends Error{}
+
