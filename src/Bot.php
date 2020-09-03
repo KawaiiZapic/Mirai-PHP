@@ -506,7 +506,6 @@ class Bot {
 	 *
 	 * @throws TargetNotFoundException Target group not found
 	 * @throws PermissionDeniedException Bot has no permission to do this
-     * @throws IllegalParamsException
 	 * @throws Exception Unknown error occurred
 	 * 
 	 * @return bool Mute successfully or not

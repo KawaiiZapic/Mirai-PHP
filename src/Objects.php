@@ -6,6 +6,17 @@ use ArrayObject;
 
 class MessageChain extends ArrayObject {
 	
+	/**
+	 * MessageChain constructor.
+	 *
+	 * @param array $input Message chain array
+	 * @param int $flags
+	 * @param string $iterator_class
+	 *
+	 * @throws IllegalParamsException Message chain is not valid
+	 *
+	 */
+	
 	public function __construct($input = array(), $flags = 0, $iterator_class = "ArrayIterator") {
 		foreach ($input as $key => &$obj) {
 			if (gettype($obj) == "string") {
@@ -18,10 +29,27 @@ class MessageChain extends ArrayObject {
 		parent::__construct($input, $flags, $iterator_class);
 	}
 	
+	/**
+	 *
+	 * Get id of message
+	 * if this message chain hasn't got id,will return -1
+	 *
+	 * @return int Id of message
+	 *
+	 */
+	
 	public function getId(): int {
 		return isset($this[0]) && $this->offsetGet(0)->type == "Source" ? $this->offsetGet(0)->id : -1;
 	}
 	
+	/**
+	 *
+	 * @param mixed $index
+	 * @param mixed $obj
+	 *
+	 * @throws IllegalParamsException Invalid message component
+	 *
+	 */
 	public function offsetSet($index, $obj) {
 		if (gettype($obj) == "string") {
 			$obj = new PlainMessage($obj);
@@ -32,6 +60,12 @@ class MessageChain extends ArrayObject {
 		parent::offsetSet($index, $obj);
 	}
 	
+	/**
+	 * @param mixed $obj
+	 *
+	 * @throws IllegalParamsException Invalid message component
+	 *
+	 */
 	public function append($obj) {
 		if (gettype($obj) == "string") {
 			$obj = new PlainMessage($obj);
@@ -46,7 +80,18 @@ class MessageChain extends ArrayObject {
 		return self::toString($this);
 	}
 	
-	public static function toString($chain): string {
+	/**
+	 *
+	 * Turn a message chain to string
+	 * this is IRREVERSIBLE
+	 *
+	 * @param MessageChain $chain
+	 *
+	 * @return string Result
+	 *
+	 */
+	
+	public static function toString(MessageChain $chain): string {
 		$str = '';
 		foreach ($chain as $msg) {
 			switch ($msg->type) {
@@ -93,6 +138,15 @@ class MessageChain extends ArrayObject {
 		return $str;
 	}
 	
+	/**
+	 *
+	 * Check message component is valid or not
+	 *
+	 * @param mixed $obj Message component
+	 *
+	 * @return bool Valid or not
+	 *
+	 */
 	
 	public static function checkMessageValid($obj): bool {
 		switch ($obj->type) {
@@ -170,40 +224,29 @@ class MessageChain extends ArrayObject {
 	}
 }
 
-class User {
-	protected $_user;
+abstract class User {
+	public $id;
+	
 	protected $_bot;
 	
 	/**
 	 *
-	 * "Abstract" User instance
+	 * Abstract User instance
 	 * Can not do any thing
 	 *
-	 * @param mixed $dat User dat,accept object and int
-	 * @param \Mirai\Bot $bot Bot instance
+	 * @param mixed $dat User data,accept object and int(qq)
+	 * @param Bot $bot Bot instance
 	 *
 	 */
 	
-	public function __construct($dat, \Mirai\Bot &$bot) {
+	public function __construct($dat, Bot &$bot) {
 		$this->_bot = $bot;
 		if (is_numeric($dat)) {
-			$this->_user = new \stdClass();
-			$this->_user->id = $dat;
+			$this->id = $dat;
 		} else {
-			$this->_user = $dat;
+			$this->id = $dat->id;
 		}
-	}
-	
-	/**
-	 *
-	 * Get user data instance
-	 *
-	 * @return mixed User data instance
-	 *
-	 */
-	
-	public function toObject() {
-		return $this->_user;
+		
 	}
 	
 	/**
@@ -215,12 +258,15 @@ class User {
 	 */
 	
 	public function getId(): int {
-		return $this->_user->id;
+		return $this->id;
 	}
 }
 
 class Group {
-	private $_group;
+	public $id;
+	public $name;
+	public $permission;
+	
 	private $_bot;
 	
 	/**
@@ -228,31 +274,21 @@ class Group {
 	 * Group instance
 	 *
 	 * @param mixed $dat Group data,accept object and int
-	 * @param \Mirai\Bot Bot instance
+	 * @param Bot Bot instance
 	 *
 	 */
 	
-	public function __construct($dat, \Mirai\Bot &$bot) {
+	public function __construct($dat, Bot &$bot) {
 		$this->_bot = $bot;
 		if (is_numeric($dat)) {
-			$this->_group = new \stdClass();
-			$this->_group->id = $dat;
+			$this->id = $dat;
 		} else {
-			$this->_group = $dat;
+			$this->id = $dat->id;
+			$this->name = $dat->name;
+			$this->permission = $dat->permission;
 		}
 	}
 	
-	/**
-	 *
-	 * Get group data instance
-	 *
-	 * @return mixed User data instance
-	 *
-	 */
-	
-	public function toObject() {
-		return $this->_group;
-	}
 	
 	/**
 	 *
@@ -263,7 +299,7 @@ class Group {
 	 */
 	
 	public function getId(): int {
-		return $this->_group->id;
+		return $this->id;
 	}
 	
 	/**
@@ -275,7 +311,7 @@ class Group {
 	 */
 	
 	public function getBotPermission(): string {
-		return $this->_group->permission;
+		return $this->permission;
 	}
 	
 	/**
@@ -287,7 +323,7 @@ class Group {
 	 */
 	
 	public function getGroupName(): string {
-		return $this->_group->name;
+		return $this->name;
 	}
 	
 	/**
@@ -299,12 +335,15 @@ class Group {
 	 */
 	
 	public function getMemberList() {
-		return $this->_bot->getMemberList($this->getId());
+		return $this->_bot->getMemberList($this->id);
 	}
 	
 	/**
 	 *
 	 * Enable group hole mute
+	 *
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 * @throws TargetNotFoundException
 	 *
 	 * @return mixed API response
 	 *
@@ -317,6 +356,9 @@ class Group {
 	/**
 	 *
 	 * Disable group hole mute
+	 *
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 * @throws TargetNotFoundException
 	 *
 	 * @return mixed API response
 	 *
@@ -333,11 +375,14 @@ class Group {
 	 * @param int $target Target id
 	 * @param int $time Duration of mute
 	 *
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 * @throws TargetNotFoundException
+	 *
 	 * @return mixed API response
 	 *
 	 */
 	
-	public function muteMember($target, $time = 0) {
+	public function muteMember(int $target,int $time = 0) {
 		return $this->_bot->muteMember($this->getId(), $target, $time);
 	}
 	
@@ -347,11 +392,14 @@ class Group {
 	 *
 	 * @param int $target Target id
 	 *
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 * @throws TargetNotFoundException
+	 *
 	 * @return mixed API response
 	 *
 	 */
 	
-	public function unmuteMember($target) {
+	public function unmuteMember(int $target) {
 		return $this->_bot->unmuteMember($this->getId(), $target);
 	}
 	
@@ -362,17 +410,23 @@ class Group {
 	 * @param int $target Target to remove
 	 * @param string $msg Kick message
 	 *
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 * @throws TargetNotFoundException
+	 *
 	 * @return mixed API response
 	 *
 	 */
 	
-	public function kickMember($target, $msg = "") {
+	public function kickMember(int $target, string $msg = "") {
 		return $this->_bot->kickMember($this->getId(), $target, $msg);
 	}
 	
 	/**
 	 *
 	 * Leave this group
+	 *
+	 * @throws PermissionDeniedException Bot has no permission to do this
+	 * @throws TargetNotFoundException
 	 *
 	 * @return mixed API response
 	 *
@@ -395,7 +449,7 @@ class Group {
 	 * @return mixed API response
 	 *
 	 */
-	public function GroupConfig($name, $value = null) {
+	public function GroupConfig(string $name, $value = null) {
 		return $this->_bot->GroupConfig($this->getId(), $name, $value);
 	}
 	
@@ -406,6 +460,7 @@ class Group {
 	 * If the second param is null,function will return the info vale
 	 * If the second param is not null,the value will be save to member info
 	 *
+	 * @param int $target Target user
 	 * @param string $name Config name
 	 * @param mixed $value Value to set
 	 *
@@ -413,8 +468,8 @@ class Group {
 	 *
 	 */
 	
-	public function memberInfo($target, $name, $value = null) {
-		return $this->_bot->GroupConfig($this->getId(), $target, $name, $value);
+	public function memberInfo(int $target,string $name, $value = null) {
+		return $this->_bot->memberInfo($this->id, $target, $name, $value);
 	}
 	
 	/**
@@ -429,17 +484,16 @@ class Group {
 	 */
 	
 	public function sendMessage($msg, $quote = null) {
-		$msg = $msg instanceof MessageChain ? $msg->toArray() : $msg;
-		$pre = [
-			"target" => $this->_group->id,
-			"messageChain" => $msg
-		];
-		return $this->_bot->sendGroupMessage($this->getId(), $pre, $quote);
+		return $this->_bot->sendGroupMessage($this->id, $msg, $quote);
 	}
 	
 }
 
 class GroupUser extends User {
+	
+	public $group;
+	public $memberName;
+	public $permission;
 	
 	/**
 	 *
@@ -448,18 +502,19 @@ class GroupUser extends User {
 	 *
 	 * @param mixed $dat Group user data or QQ id
 	 * @param mixed $sec Bot instance or group id
-	 * @param \Mirai\Bot $bot Bot instance
+	 * @param Bot $bot Bot instance
 	 *
 	 */
 	
 	public function __construct($dat, &$sec, &$bot = null) {
 		if (is_numeric($dat)) {
+			$this->id = $dat;
+			$this->group = new Group($sec,$bot);
 			$this->_bot = $bot;
-			$this->_user = new \stdClass();
-			$this->_user->id = $dat;
-			$this->_user->group->id = intval($sec);
 		} else {
-			$this->_user = $dat;
+			$this->group = new Group($dat->group,$bot);
+			$this->memberName = $dat->memberName;
+			$this->permission = $dat->permission;
 			$this->_bot = $sec;
 		}
 	}
@@ -468,12 +523,12 @@ class GroupUser extends User {
 	 *
 	 * Get group instance which sender in
 	 *
-	 * @return \Mirai\Group Group instance
+	 * @return Group Group instance
 	 *
 	 */
 	
 	public function getGroup(): Group {
-		return new Group($this->_user->group, $this->_bot);
+		return $this->group;
 	}
 	
 	/**
@@ -558,6 +613,9 @@ class GroupUser extends User {
 
 class PrivateUser extends User {
 	
+	public $remark;
+	public $nickname;
+	
 	/**
 	 *
 	 * Private user
@@ -567,14 +625,12 @@ class PrivateUser extends User {
 	 *
 	 */
 	
-	public function __construct($dat, \Mirai\Bot $bot) {
-		$this->_bot = $bot;
-		if (is_numeric($dat)) {
-			$this->_user = new \stdClass();
-			$this->_user->id = $dat;
-		} else {
-			$this->_user = $dat;
+	public function __construct($dat, Bot $bot) {
+		if (!is_numeric($dat)) {
+			$this->remark = $dat->remark;
+			$this->nickname = $dat->remark;
 		}
+		parent::__construct($dat, $bot);
 	}
 	
 	/**
@@ -584,12 +640,14 @@ class PrivateUser extends User {
 	 * @param mixed $msg Message to send,accept MessageChain,Array and string
 	 * @param int $quote Id of message to quote
 	 *
-	 * @return mixed API response
+	 * @throws IllegalParamsException Message chain may not valid
+	 * @throws MessageTooLongException Message too long
+	 * @throws TargetNotFoundException Target user not found
 	 *
+	 * @return mixed API response
 	 */
 	
 	public function sendMessage($msg, int $quote = null) {
-		$msg = $msg instanceof MessageChain ? $msg->toArray() : $msg;
-		return $this->_bot->sendFriendMessage($this->_user->id, $this->_user->group->id, $msg, $quote);
+		return $this->_bot->sendFriendMessage($this->id, $msg, $quote);
 	}
 }

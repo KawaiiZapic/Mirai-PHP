@@ -4,7 +4,6 @@ use Error;
 use Exception;
 
 class IllegalParamsException extends Exception{}
-class IllegalMessageObjectException extends Exception{}
 
 class MiraiException extends Exception{
     protected $errCode;
