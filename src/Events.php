@@ -322,7 +322,7 @@ class TempMessageEvent extends MessageEvent {
     }
 }
 
-abstract class BotEvent extends BaseEvent {
+abstract class BotSelfEvent extends BaseEvent {
 
 	public $qq;
 	
@@ -344,13 +344,33 @@ abstract class BotEvent extends BaseEvent {
     }
 }
 
-class BotOnlineEvent extends BotEvent {}
-abstract class BotOfflineEvent extends BotEvent {}
+class BotOnlineEvent extends BotSelfEvent {}
+abstract class BotOfflineEvent extends BotSelfEvent {}
 class BotOfflineEventActive extends BotOfflineEvent {}
 class BotOfflineEventForce extends BotOfflineEvent {}
 class BotOfflineEventDropped extends BotOfflineEvent {}
-class BotReloginEvent extends BotEvent {}
-class BotMuteEvent extends BotEvent {
+class BotReloginEvent extends BotSelfEvent {}
+abstract class BotGroupEvent extends BaseEvent {
+	
+	public $group;
+	
+	public function __construct($obj, Bot &$bot) {
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
+	 *
+	 * Get group instance which bot has been muted
+	 *
+	 * @return Group Group instance
+	 *
+	 */
+	
+	public function getGroup():Group {
+		return $this->group;
+	}
+}
+class BotMuteEvent extends BotGroupEvent {
 
 	public $durationSeconds;
 	public $operator;
@@ -358,6 +378,7 @@ class BotMuteEvent extends BotEvent {
 	public function __construct($obj, Bot &$bot) {
 		$this->durationSeconds = $obj->durationSeconds;
 		$this->operator = new GroupUser($obj->operator,$bot);
+		$this->group = new Group($obj->operator->group,$bot);
 		parent::__construct($obj, $bot);
 	}
 	
@@ -385,24 +406,15 @@ class BotMuteEvent extends BotEvent {
         return $this->operator;
     }
 
-    /**
-     *
-     * Get group instance which bot has been muted
-     *
-     * @return Group Group instance
-     *
-     */
-
-    public function getGroup(): Group {
-        return $this->operator->getGroup();
-    }
+    
 }
-class BotUnmuteEvent extends BotEvent {
+class BotUnmuteEvent extends BotGroupEvent {
 	
 	public $operator;
 	
 	public function __construct($obj, Bot &$bot) {
 		$this->operator = new GroupUser($obj->operator,$bot);
+		$this->group = new Group($obj->operator->group,$bot);
 		parent::__construct($obj, $bot);
 	}
 	
@@ -417,20 +429,8 @@ class BotUnmuteEvent extends BotEvent {
 	public function getOperator(): GroupUser {
 		return $this->operator;
 	}
-	
-	/**
-	 *
-	 * Get group instance which bot has been muted
-	 *
-	 * @return Group Group instance
-	 *
-	 */
-	
-	public function getGroup(): Group {
-		return $this->operator->getGroup();
-	}
 }
-class BotGroupPermissionChangeEvent extends BotEvent {
+class BotGroupPermissionChangeEvent extends BotGroupEvent {
 	
 	public $origin;
 	public $current;
@@ -467,51 +467,31 @@ class BotGroupPermissionChangeEvent extends BotEvent {
     public function getCurrent(): string {
         return $this->current;
     }
-
-    /**
-     *
-     * Get group which bot permission has been changed
-     *
-     * @return Group Group instance
-     *
-     */
-
-    public function getGroup(): Group {
-        return $this->group;
-    }
 }
-class BotJoinGroupEvent extends BotEvent {
+class BotJoinGroupEvent extends BotGroupEvent {
 
-    /**
-     *
-     * Get group instance which bot joined
-     *
-     * @return Group Group instance
-     *
-     */
-
-    public function getGroup(): Group {
-        return new Group($this->_raw->group, $this->_bot);
-    }
+	public function __construct($obj, Bot &$bot) {
+		$this->group = new Group($obj->group,$bot);
+		parent::__construct($obj, $bot);
+	}
+	
 }
-abstract class BotLeaveEvent extends BotEvent {
-
-    /**
-     *
-     * Get group instance which bot (has been) left
-     *
-     * @return Group Group instance
-     *
-     */
-
-    public function getGroup(): Group {
-        return new Group($this->_raw->group, $this->_bot);
-    }
+abstract class BotLeaveEvent extends BotGroupEvent {
+	public function __construct($obj, Bot &$bot) {
+		$this->group = new Group($obj->group,$bot);
+		parent::__construct($obj, $bot);
+	}
 }
 class BotLeaveEventActive extends BotLeaveEvent {}
 class BotLeaveEventKick extends BotLeaveEvent {}
 abstract class RecallEvent extends BaseEvent {
 
+	public $messageId;
+	public $authorId;
+	public $time;
+	
+	protected $_author;
+	
     /**
      *
      * Get author of recalled message
@@ -520,9 +500,9 @@ abstract class RecallEvent extends BaseEvent {
      *
      */
 
-    public function getAuthor() {
-        return new User($this->_raw->authorId, $this->_bot);
-    }
+    public function getAuthorId():int {
+    	return $this->authorId;
+	}
 
     /**
      *
@@ -533,7 +513,7 @@ abstract class RecallEvent extends BaseEvent {
      */
 
     public function getId(): int {
-        return $this->_raw->messageId;
+        return $this->messageId;
     }
 
     /**
@@ -544,7 +524,7 @@ abstract class RecallEvent extends BaseEvent {
      */
 
     public function getTime(): int {
-        return $this->_raw->time;
+        return $this->time;
     }
 
     /**
@@ -556,23 +536,48 @@ abstract class RecallEvent extends BaseEvent {
      */
 
     abstract public function getOperator();
+    abstract public function getAuthor();
 }
 class GroupRecallEvent extends RecallEvent {
-
-    /**
+	
+	public $group;
+	public $operator;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->group = new Group($obj->group, $bot);
+		$this->_author = new GroupUser($obj->authorId,$obj->group->id,$bot);
+		$this->operator = new GroupUser($obj->operator, $bot);
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      *
      * Get recall operator instance
      *
      * @return GroupUser Operator instance
      *
      */
-
-    public function getOperator(): GroupUser {
-        return new GroupUser($this->_raw->operator, $this->_bot);
+    
+	public function getOperator(): GroupUser {
+        return $this->operator;
     }
+    
+    public function getAuthor():GroupUser {
+		return $this->_author;
+	}
 }
 class FriendRecallEvent extends RecallEvent {
-
+	
+	public $operator;
+	private $_operator;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->_author = new PrivateUser($obj->authorId,$bot);
+		$this->_operator = new PrivateUser($obj->operator,$bot);
+		$this->operator = $obj->operator;
+		parent::__construct($obj, $bot);
+	}
+	
     /**
      *
      * Get recall operator instance
@@ -582,12 +587,19 @@ class FriendRecallEvent extends RecallEvent {
      */
 
     public function getOperator(): PrivateUser {
-        return new PrivateUser($this->_raw->operator, $this->_bot);
+        return $this->_operator;
     }
+    
+    public function getAuthor() {
+		return $this->_author;
+	}
 }
 abstract class GroupEvent extends BaseEvent {}
 abstract class GroupChangeEvent extends GroupEvent {
 
+	public $origin;
+	public $current;
+	
     /**
      *
      * Get origin value
@@ -597,7 +609,7 @@ abstract class GroupChangeEvent extends GroupEvent {
      */
 
     public function getOrigin(): string {
-        return $this->_raw->origin;
+        return $this->origin;
     }
 
     /**
@@ -609,7 +621,7 @@ abstract class GroupChangeEvent extends GroupEvent {
      */
 
     public function getCurrent(): string {
-        return $this->_raw->current;
+        return $this->current;
     }
 
     /**

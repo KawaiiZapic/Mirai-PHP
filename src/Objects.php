@@ -279,7 +279,7 @@ class Group {
 	 */
 	
 	public function __construct($dat, Bot &$bot) {
-		$this->_bot = $bot;
+		$this->_bot = &$bot;
 		if (is_numeric($dat)) {
 			$this->id = $dat;
 		} else {
@@ -345,12 +345,12 @@ class Group {
 	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws TargetNotFoundException
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function muteAll() {
-		return $this->_bot->muteAll($this->getId());
+	public function muteAll():bool {
+		return $this->_bot->muteAll($this->id);
 	}
 	
 	/**
@@ -360,11 +360,11 @@ class Group {
 	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws TargetNotFoundException
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function unmuteAll() {
+	public function unmuteAll():bool {
 		return $this->_bot->unmuteAll($this->getId());
 	}
 	
@@ -378,11 +378,11 @@ class Group {
 	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws TargetNotFoundException
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function muteMember(int $target,int $time = 0) {
+	public function muteMember(int $target,int $time = 0):bool {
 		return $this->_bot->muteMember($this->getId(), $target, $time);
 	}
 	
@@ -395,11 +395,11 @@ class Group {
 	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws TargetNotFoundException
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function unmuteMember(int $target) {
+	public function unmuteMember(int $target):bool {
 		return $this->_bot->unmuteMember($this->getId(), $target);
 	}
 	
@@ -413,11 +413,11 @@ class Group {
 	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws TargetNotFoundException
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function kickMember(int $target, string $msg = "") {
+	public function kickMember(int $target, string $msg = ""):bool {
 		return $this->_bot->kickMember($this->getId(), $target, $msg);
 	}
 	
@@ -428,11 +428,11 @@ class Group {
 	 * @throws PermissionDeniedException Bot has no permission to do this
 	 * @throws TargetNotFoundException
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function quitGroup() {
+	public function quitGroup():bool {
 		return $this->_bot->quitGroup($this->getId());
 	}
 	
@@ -479,11 +479,11 @@ class Group {
 	 * @param mixed $msg Message to send,accept MessageChain,Array and string
 	 * @param int $quote Id of message  to quote
 	 *
-	 * @return mixed API response
+	 * @return int Message id
 	 *
 	 */
 	
-	public function sendMessage($msg, $quote = null) {
+	public function sendMessage($msg, $quote = null):int {
 		return $this->_bot->sendGroupMessage($this->id, $msg, $quote);
 	}
 	
@@ -508,14 +508,13 @@ class GroupUser extends User {
 	
 	public function __construct($dat, &$sec, &$bot = null) {
 		if (is_numeric($dat)) {
-			$this->id = $dat;
 			$this->group = new Group($sec,$bot);
-			$this->_bot = $bot;
+			parent::__construct($dat,$bot);
 		} else {
-			$this->group = new Group($dat->group,$bot);
+			$this->group = new Group($dat->group,$sec);
 			$this->memberName = $dat->memberName;
 			$this->permission = $dat->permission;
-			$this->_bot = $sec;
+			parent::__construct($dat,$sec);
 		}
 	}
 	
@@ -537,12 +536,12 @@ class GroupUser extends User {
 	 *
 	 * @param string Kick message
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function Kick(string $msg = "") {
-		return $this->_bot->callBotAPI("/kick", ["target" => $this->_user->group->id, "msg" => $msg, "memberId" => $this->_user->id]);
+	public function kick(string $msg = ""):bool {
+		return $this->_bot->kickMember($this->group->id, $this->id, $msg);
 	}
 	
 	/**
@@ -551,24 +550,24 @@ class GroupUser extends User {
 	 *
 	 * @param int $time Mute duration
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function Mute($time = 0) {
-		return $this->_bot->callBotAPI("/mute", ["target" => $this->_user->group->id, "memberId" => $this->_user->id, "time" => $time]);
+	public function mute(int $time = 0):bool {
+		return $this->_bot->muteMember($this->group->id, $this->id,  $time);
 	}
 	
 	/**
 	 *
 	 * Unmute this user
 	 *
-	 * @return mixed API response
+	 * @return bool Success or not
 	 *
 	 */
 	
-	public function Unmute() {
-		return $this->_bot->callBotAPI("/unmute", ["target" => $this->_user->group->id, "memberId" => $this->_user->id]);
+	public function unmute():bool {
+		return $this->_bot->unmuteMember($this->group->id, $this->id);
 	}
 	
 	/**
@@ -585,13 +584,8 @@ class GroupUser extends User {
 	 *
 	 */
 	
-	public function Info($name, $value = null) {
-		$d = $this->_bot->callBotAPI("/memberInfo", ["target" => $this->_user->group->id, "memberId" => $this->_user->id], "get");
-		if ($value !== null) {
-			$d->$name = $value;
-			return $this->_bot->callBotAPI("/memberInfo", ["target" => $this->_user->group->id, "memberId" => $this->_user->id, "info" => $d]);
-		}
-		return $d->$name;
+	public function Info(string $name, $value = null) {
+		return $this->_bot->memberInfo($this->group->id, $this->id,$name,$value);
 	}
 	
 	/**
@@ -606,8 +600,7 @@ class GroupUser extends User {
 	 */
 	
 	public function sendMessage($msg, $quote = null) {
-		$msg = $msg instanceof MessageChain ? $msg->toArray() : $msg;
-		return $this->_bot->sendTempMessage($this->_user->id, $this->_user->group->id, $msg, $quote);
+		return $this->_bot->sendTempMessage($this->id, $this->group->id, $msg, $quote);
 	}
 }
 
