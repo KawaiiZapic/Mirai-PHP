@@ -2,8 +2,6 @@
 
 namespace Mirai;
 
-use Exception;
-
 class BaseEvent {
 	
     protected $_bot;
@@ -123,7 +121,7 @@ abstract class MessageEvent extends BaseEvent {
      * @param mixed $msg Message to reply,accept String and Array
 	 * @param bool $quote Quote this message to reply or not
      *
-	 * @throws Exception Unknown Error occurred
+	 * @throws \Exception Unknown Error occurred
 	 *
      * @return int Message id
      *
@@ -321,7 +319,6 @@ class TempMessageEvent extends MessageEvent {
         return $this->sender;
     }
 }
-
 abstract class BotSelfEvent extends BaseEvent {
 
 	public $qq;
@@ -343,7 +340,6 @@ abstract class BotSelfEvent extends BaseEvent {
         return $this->qq;
     }
 }
-
 class BotOnlineEvent extends BotSelfEvent {}
 abstract class BotOfflineEvent extends BotSelfEvent {}
 class BotOfflineEventActive extends BotOfflineEvent {}
@@ -594,13 +590,27 @@ class FriendRecallEvent extends RecallEvent {
 		return $this->_author;
 	}
 }
-abstract class GroupEvent extends BaseEvent {}
+abstract class GroupEvent extends BaseEvent {
+	public function __construct($obj, Bot &$bot) {
+		parent::__construct($obj, $bot);
+	}
+}
 abstract class GroupChangeEvent extends GroupEvent {
 
 	public $origin;
 	public $current;
+	public $group;
+	public $operator;
 	
-    /**
+	public function __construct($obj, Bot &$bot) {
+		$this->origin = $obj->origin;
+		$this->current = $obj->current;
+		$this->group = new Group($obj->group,$bot);
+		$this->operator = new GroupUser($obj->operator,$bot);
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      *
      * Get origin value
      *
@@ -633,7 +643,7 @@ abstract class GroupChangeEvent extends GroupEvent {
      */
 
     public function getGroup(): Group {
-        return new Group($this->_raw->group, $this->_bot);
+        return $this->group;
     }
 
     /**
@@ -645,7 +655,7 @@ abstract class GroupChangeEvent extends GroupEvent {
      */
 
     public function getOperator(): GroupUser {
-        return new GroupUser($this->_raw->operator, $this->_bot);
+        return $this->operator;
     }
 }
 class GroupNameChangeEvent extends GroupChangeEvent {}
@@ -653,8 +663,14 @@ class GroupEntranceAnnouncementChangeEvent extends GroupChangeEvent {}
 class GroupMuteAllEvent extends GroupChangeEvent {}
 class GroupAllowAnonymousChatEvent extends GroupChangeEvent {}
 class GroupAllowConfessTalkEvent extends GroupChangeEvent {
-
-    /**
+	public $isByBot;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->isByBot = $obj->isByBot;
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      *
      * DO NOT CALL THIS FUNCTION
      * USE "isByBot" INSTEAD
@@ -677,13 +693,20 @@ class GroupAllowConfessTalkEvent extends GroupChangeEvent {
      */
 
     public function isByBot(): bool {
-        return $this->_raw->isByBot;
+        return $this->isByBot;
     }
 }
 class GroupAllowMemberInviteEvent extends GroupChangeEvent {}
 class MemberJoinEvent extends GroupEvent {
-
-    /**
+	
+	public $member;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->member = new GroupUser($obj->member,$bot);
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      *
      * Get joined user instance
      *
@@ -692,11 +715,18 @@ class MemberJoinEvent extends GroupEvent {
      */
 
     public function getMember(): GroupUser {
-        return new GroupUser($this->_raw->member, $this->_bot);
+        return $this->member;
     }
 }
 abstract class MemberLeaveEvent extends GroupEvent {
 
+	public $member;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->member = new GroupUser($obj->member,$bot);
+		parent::__construct($obj, $bot);
+	}
+	
     /**
      *
      * Get left user instance
@@ -706,18 +736,55 @@ abstract class MemberLeaveEvent extends GroupEvent {
      */
 
     public function getMember(): GroupUser {
-        return new GroupUser($this->_raw->member, $this->_bot);
+        return $this->member;
     }
 }
-class MemberLeaveEventKick extends MemberLeaveEvent {}
+class MemberLeaveEventKick extends MemberLeaveEvent {
+	public $operator;
+	public function __construct($obj, Bot &$bot) {
+		$this->operator = new GroupUser($obj->operator,$bot);
+		parent::__construct($obj, $bot);
+	}
+	public function getOperator(): GroupUser{
+		return $this->operator;
+	}
+}
 class MemberLeaveEventQuit extends MemberLeaveEvent {}
-class GroupMemberChangeEvent extends GroupEvent {}
-class MemberCardChangeEvent extends GroupMemberChangeEvent {}
+class GroupMemberChangeEvent extends GroupEvent {
+	public $origin;
+	public $current;
+	public $member;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->origin = $obj->origin;
+		$this->current = $obj->current;
+		$this->member = new GroupUser($obj->member,$bot);
+		parent::__construct($obj, $bot);
+	}
+}
+class MemberCardChangeEvent extends GroupMemberChangeEvent {
+	public $operator;
+	public function __construct($obj, Bot &$bot) {
+		$this->operator = new GroupUser($obj->operator,$bot);
+		parent::__construct($obj, $bot);
+	}
+}
 class MemberSpecialTitleChangeEvent extends GroupMemberChangeEvent {}
 class MemberPermissionChangeEvent extends GroupMemberChangeEvent {}
 class MemberMuteEvent extends GroupEvent {
 
-    /**
+	public $durationSeconds;
+	public $member;
+	public $operator;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->durationSeconds = $obj->durationSeconds;
+		$this->member = new GroupUser($obj->group,$bot);
+		$this->operator = new GroupUser($obj->operator,$bot);
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      *
      * Get mute duration.
      *
@@ -726,7 +793,7 @@ class MemberMuteEvent extends GroupEvent {
      */
 
     public function getDuration(): int {
-        return $this->_raw->durationSeconds;
+        return $this->durationSeconds;
     }
 
     /**
@@ -738,7 +805,7 @@ class MemberMuteEvent extends GroupEvent {
      */
 
     public function getOperator(): GroupUser {
-        return new GroupUser($this->_raw->operator, $this->_bot);
+        return $this->operator;
     }
 
     /**
@@ -750,7 +817,7 @@ class MemberMuteEvent extends GroupEvent {
      */
 
     public function getGroup(): Group {
-        return new Group($this->_raw->operator->group, $this->_bot);
+        return $this->operator->group;
     }
 
     /**
@@ -762,12 +829,21 @@ class MemberMuteEvent extends GroupEvent {
      */
 
     public function getMember(): GroupUser {
-        return new GroupUser($this->_raw->member, $this->_bot);
+        return $this->member;
     }
 }
 class MemberUnmuteEvent extends GroupEvent {
-    
-    /** 
+ 
+	public $operator;
+	public $member;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->operator = new GroupUser($obj->operator,$bot);
+		$this->member = new GroupUser($obj->member,$bot);
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
     *
     * Get group instance which user has been muted
     *
@@ -776,7 +852,7 @@ class MemberUnmuteEvent extends GroupEvent {
     */
 
     public function getGroup(): Group {
-        return new Group($this->_raw->operator->group, $this->_bot);
+        return $this->operator->group;
     }
 
     /**
@@ -788,12 +864,27 @@ class MemberUnmuteEvent extends GroupEvent {
      */
 
     public function getMember(): GroupUser {
-        return new GroupUser($this->_raw->member, $this->_bot);
+        return $this->member;
     }
 }
 abstract class RequestEvent extends BaseEvent {
 
-    /**
+	public $eventId;
+	public $fromId;
+	public $groupId;
+	public $nick;
+	public $message;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->eventId = $obj->eventId;
+		$this->fromId = $obj->fromId;
+		$this->groupId = $obj->groupId;
+		$this->nick = $obj->nick;
+		$this->message = $obj->message;
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      * 
      * Get event id
      * 
@@ -802,7 +893,7 @@ abstract class RequestEvent extends BaseEvent {
      */
     
     public function getEventId(): int {
-        return $this->_raw->eventId;
+        return $this->eventId;
     }
 
     /**
@@ -814,7 +905,7 @@ abstract class RequestEvent extends BaseEvent {
      */
 
     public function getFromId(): int {
-        return $this->_raw->fromId;
+        return $this->fromId;
     }
 
     /**
@@ -825,8 +916,8 @@ abstract class RequestEvent extends BaseEvent {
      * 
      */
 
-    public function getGroup(): Group {
-        return new Group($this->_raw->groupId, $this->_raw);
+    public function getGroupId(): int {
+        return $this->groupId;
     }
 
     /**
@@ -838,7 +929,7 @@ abstract class RequestEvent extends BaseEvent {
      */
 
     public function getNick(): string {
-        return $this->_raw->nick;
+        return $this->nick;
     }
 
     /**
@@ -850,7 +941,7 @@ abstract class RequestEvent extends BaseEvent {
      */
 
     public function getMessage(): string {
-        return $this->_raw->message;
+        return $this->message;
     }
 
     /**
@@ -920,9 +1011,9 @@ class NewFriendRequestEvent extends RequestEvent {
 
     public function ResponseCode(int $code, string $msg = "") {
         return $this->_bot->callBotAPI("/resp/newFriendRequestEvent", [
-            "eventId" => $this->_raw->eventId,
-            "fromId" => $this->_raw->fromId,
-            "groupId" => $this->_raw->groupId,
+            "eventId" => $this->eventId,
+            "fromId" => $this->fromId,
+            "groupId" => $this->groupId,
             "operate" => $code,
             "message" => $msg,
         ]);
@@ -931,7 +1022,14 @@ class NewFriendRequestEvent extends RequestEvent {
 }
 class MemberJoinRequestEvent extends RequestEvent {
 
-    /**
+	public $groupName;
+	
+	public function __construct($obj, Bot &$bot) {
+		$this->groupName = $obj->groupName;
+		parent::__construct($obj, $bot);
+	}
+	
+	/**
      * 
      * Get group name which request from
      * 
@@ -940,7 +1038,7 @@ class MemberJoinRequestEvent extends RequestEvent {
      */
 
     public function getGroupName(): string {
-        return $this->_raw->groupName;
+        return $this->groupName;
     }
 
     /**
@@ -1023,9 +1121,9 @@ class MemberJoinRequestEvent extends RequestEvent {
     
     public function ResponseCode(int $code, string $msg = "") {
         return $this->_bot->callBotAPI("/resp/memberJoinRequestEvent", [
-            "eventId" => $this->_raw->eventId,
-            "fromId" => $this->_raw->fromId,
-            "groupId" => $this->_raw->groupId,
+            "eventId" => $this->eventId,
+            "fromId" => $this->fromId,
+            "groupId" => $this->groupId,
             "operate" => $code,
             "message" => $msg,
         ]);
@@ -1070,9 +1168,9 @@ class BotInvitedJoinGroupRequestEvent extends RequestEvent {
 
     public function ResponseCode(int $code, string $msg = "") {
         return $this->_bot->callBotAPI("/resp/memberJoinRequestEvent", [
-            "eventId" => $this->_raw->eventId,
-            "fromId" => $this->_raw->fromId,
-            "groupId" => $this->_raw->groupId,
+            "eventId" => $this->eventId,
+            "fromId" => $this->fromId,
+            "groupId" => $this->groupId,
             "operate" => $code,
             "message" => $msg,
         ]);
