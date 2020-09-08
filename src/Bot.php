@@ -253,6 +253,30 @@ class Bot {
 		return json_decode($client->body);
 	}
 	
+	public function uploadVoice(string $type, string $file, float $timeout = 10){
+		if (!file_exists($file) || !is_file($file)) {
+			throw new FileNotFoundException("File \"{$file}\" not found.");
+		}
+		$boundary = "----MiraiBoundary" . uniqid();
+		$client = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
+		$client->setHeaders([
+			"Content-Type" => "multipart/form-data; boundary={$boundary};",
+		]);
+		$client->set(['timeout' => $timeout]);
+		$client->setMethod("POST");
+		$body = "--{$boundary}\r\nContent-Disposition: form-data; name=\"sessionKey\"\r\n\r\n{$this->_session}\r\n";
+		$body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\n{$type}\r\n";
+		$body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"voice\"; filename=\"voice\" \r\n\r\n" . Co::readFile($file) . "\r\n";
+		$body .= "--{$boundary}--\r\n";
+		$client->setData($body);
+		$client->execute("/uploadVoice");
+		$client->close();
+		if ($client->statusCode == -2) {
+			throw new TimeoutException("API doesn't send response in {$timeout}s.");
+		}
+		return json_decode($client->body);
+	}
+	
 	/**
 	 *
 	 * Send image to target by URL
