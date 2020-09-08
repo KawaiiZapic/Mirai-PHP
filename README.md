@@ -6,7 +6,7 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
   * [x] 机器人实例
   * [x] 事件实例
   * [x] 消息与消息链实例
-  * [ ] 异常与错误  
+  * [x] 异常与错误  
   
 
 * [ ] 检查API是否可以正常调用
@@ -40,5 +40,5 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
 等死吧,这辈子都写不完的.
 
 ## 需要一个像Mirai-Console的插件框架?
-ZBot是一个基于Swoole和本SDK的协程机器人框架,提供完整的插件管理/事件分发/数据存储/权限管理.
+Potabot是一个基于Swoole和本SDK的协程机器人框架,提供完整的插件管理/事件分发/数据存储/权限管理.
 **但是她还在开发,需要等待本SDK不再快速迭代之后才能确保稳定**
