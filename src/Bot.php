@@ -139,6 +139,51 @@ class Bot {
 			}
 		});
 	}
+	
+	public function getMessageWebsocket(){
+		$conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
+		$ret = $conn->upgrade("/message?sessionKey={$this->_session}");
+		if (!$ret || $conn->statusCode != 101) {
+			throw new UpgradeFailedError("Failed to upgrade connection to Websocket.");
+		}
+		return $conn;
+	}
+	public function getEventWebsocket(){
+		$conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
+		$ret = $conn->upgrade("/event?sessionKey={$this->_session}");
+		if (!$ret || $conn->statusCode != 101) {
+			throw new UpgradeFailedError("Failed to upgrade connection to Websocket.");
+		}
+		return $conn;
+	}
+	public function getAllWebsocket(){
+		$conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
+		$ret = $conn->upgrade("/all?sessionKey={$this->_session}");
+		if (!$ret || $conn->statusCode != 101) {
+			throw new UpgradeFailedError("Failed to upgrade connection to Websocket.");
+		}
+		return $conn;
+	}
+	
+	public function fetchMessage($count){
+		return $this->callBotAPI("/fetchMessage",["count"=>$count],"get")->data;
+	}
+	public function fetchLatestMessage($count){
+		return $this->callBotAPI("/fetchAllMessage",["count"=>$count],"get")->data;
+	}
+	public function peekMessage($count){
+		return $this->callBotAPI("/peekMessage",["count"=>$count],"get")->data;
+	}
+	public function peekLatestMessage($count){
+		return $this->callBotAPI("/peekAllMessage",["count"=>$count],"get")->data;
+	}
+	public function countMessage(){
+		return $this->callBotAPI("countMessage",[],"get")->data;
+	}
+	public function messageFromId(int $id){
+		#/messageFromId?sessionKey=YourSessionKey&id=1234567890
+		return $this->callBotAPI("/messageFromId",["id"=>$id],"get")->data;
+	}
 
 	/**
 	 *
