@@ -2,7 +2,7 @@
 A PHP SDK for Mirai based on Swoole &amp; PHP7.
 
 ## Progress  
-* [ ] 主体
+* [x] 主体
   * [x] 机器人实例
   * [x] 事件实例
   * [x] 消息与消息链实例
@@ -31,10 +31,10 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
   * [ ] 命令注册与监听
   * [ ] ...
   
-* [x] Docs
-  * [x] 主体
-  * [x] 事件
-  * [x] 消息与消息链
+* [ ] Docs
+  * [ ] 主体
+  * [ ] 事件
+  * [ ] 消息与消息链
 
 ## 何时完成?  
 等死吧,这辈子都写不完的.

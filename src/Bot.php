@@ -181,7 +181,6 @@ class Bot {
 		return $this->callBotAPI("countMessage",[],"get")->data;
 	}
 	public function messageFromId(int $id){
-		#/messageFromId?sessionKey=YourSessionKey&id=1234567890
 		return $this->callBotAPI("/messageFromId",["id"=>$id],"get")->data;
 	}
 
