@@ -30,6 +30,7 @@ class Bot {
 	private $_session;
 	private $_conn;
 	private $_qq;
+	const msgEvt = ["GroupMessage", "FriendMessage", "TempMessage"];
 	
 	/**
 	 *
@@ -140,6 +141,14 @@ class Bot {
 		});
 	}
 	
+	/**
+	 *
+	 * Get a websocket connection for message
+	 *
+	 * @return Client Websocket client
+	 *
+	 */
+	
 	public function getMessageWebsocket(){
 		$conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
 		$ret = $conn->upgrade("/message?sessionKey={$this->_session}");
@@ -148,6 +157,15 @@ class Bot {
 		}
 		return $conn;
 	}
+	
+	/**
+	 *
+	 * Get a websocket connection for event
+	 *
+	 * @return Client Websocket client
+	 *
+	 */
+	
 	public function getEventWebsocket(){
 		$conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
 		$ret = $conn->upgrade("/event?sessionKey={$this->_session}");
@@ -156,6 +174,15 @@ class Bot {
 		}
 		return $conn;
 	}
+	
+	/**
+	 *
+	 * Get a websocket connection for all
+	 *
+	 * @return Client Websocket client
+	 *
+	 */
+	
 	public function getAllWebsocket(){
 		$conn = new Client($this->_conn->host, $this->_conn->port, $this->_conn->ssl);
 		$ret = $conn->upgrade("/all?sessionKey={$this->_session}");
@@ -165,21 +192,82 @@ class Bot {
 		return $conn;
 	}
 	
-	public function fetchMessage($count){
+	/**
+	 *
+	 * Fetch message from API (Remove after fetch)
+	 *
+	 * @param int $count
+	 *
+	 * @return mixed
+	 *
+	 */
+	
+	public function fetchMessage(int $count){
 		return $this->callBotAPI("/fetchMessage",["count"=>$count],"get")->data;
 	}
-	public function fetchLatestMessage($count){
+	
+	/**
+	 *
+	 * Fetch latest message from API (Remove after fetch)
+	 *
+	 * @param int $count
+	 *
+	 * @return mixed
+	 *
+	 */
+	
+	public function fetchLatestMessage(int $count){
 		return $this->callBotAPI("/fetchAllMessage",["count"=>$count],"get")->data;
 	}
-	public function peekMessage($count){
+	
+	/**
+	 *
+	 * Peek message from API (Keep after peek)
+	 *
+	 * @param int $count
+	 *
+	 * @return mixed
+	 *
+	 */
+	
+	public function peekMessage(int $count){
 		return $this->callBotAPI("/peekMessage",["count"=>$count],"get")->data;
 	}
-	public function peekLatestMessage($count){
+	
+	/**
+	 *
+	 * Peek latest message from API (Keep after peek)
+	 *
+	 * @param int $count
+	 *
+	 * @return mixed
+	 *
+	 */
+	
+	public function peekLatestMessage(int $count){
 		return $this->callBotAPI("/peekAllMessage",["count"=>$count],"get")->data;
 	}
-	public function countMessage(){
+	
+	/**
+	 * Count message in HTTP API
+	 *
+	 * @return int Message count
+	 *
+	 */
+	
+	public function countMessage():int{
 		return $this->callBotAPI("countMessage",[],"get")->data;
 	}
+	
+	/**
+	 *
+	 * Get a message chain by id
+	 * @param int $id Message id
+	 *
+	 * @return mixed Message chain
+	 *
+	 */
+	
 	public function messageFromId(int $id){
 		return $this->callBotAPI("/messageFromId",["id"=>$id],"get")->data;
 	}
@@ -296,6 +384,21 @@ class Bot {
 		}
 		return json_decode($client->body);
 	}
+	
+	/**
+	 *
+	 * Upload voice to Tencent server
+	 *
+	 * @param string $type Type of voice,"group" only
+	 * @param string $file Path to voice file
+	 * @param float $timeout Timeout for waiting API response
+	 *
+	 * @throws FileNotFoundException Voice file not found
+	 * @throws TimeoutException API doesn't send response before timeout
+	 *
+	 * @return mixed API Response
+	 *
+	 */
 	
 	public function uploadVoice(string $type, string $file, float $timeout = 10){
 		if (!file_exists($file) || !is_file($file)) {
@@ -811,11 +914,7 @@ class Bot {
 	 */
 
 	public function EventFactory($frame) {
-		$msgEvt = ["GroupMessage", "FriendMessage", "TempMessage"];
-		if (in_array($frame->type, $msgEvt)) {
-			$frame->type .= "Event";
-		}
-		$evt = "\\Mirai\\" . $frame->type;
+		$evt = "\\Mirai\\" . $frame->type . (in_array($frame->type, self::msgEvt) ? 'Event' : '');
 		return new $evt($frame, $this);
 	}
 	

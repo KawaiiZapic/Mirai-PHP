@@ -117,6 +117,10 @@ class MessageChain extends ArrayObject {
 					$s = empty($msg->imageId) ? (empty($msg->url) ? "path:" . $msg->path : "url:" . $msg->url) : $msg->imageId;
 					$str .= "[mirai:image:{$s}]";
 					break;
+				case "Voice":
+					$s = empty($msg->voiceId) ? (empty($msg->url) ? "path:" . $msg->path : "url:" . $msg->url) : $msg->voiceId;
+					$str .= "[mirai:voice:{$s}]";
+					break;
 				case "FlashImage":
 					$s = empty($msg->imageId) ? (empty($msg->url) ? "path:" . $msg->path : "url:" . $msg->url) : $msg->imageId;
 					$str .= "[mirai:flashimage:{$s}]";
@@ -189,8 +193,15 @@ class MessageChain extends ArrayObject {
 				}
 				
 				break;
+			case "FlashImage":
 			case "Image":
 				if (!property_exists($obj, "imageId") && !property_exists($obj, "url") && !property_exists($obj, "path")) {
+					return false;
+				}
+				
+				break;
+			case "Voice":
+				if (!property_exists($obj, "voiceId") && !property_exists($obj, "url") && !property_exists($obj, "path")) {
 					return false;
 				}
 				

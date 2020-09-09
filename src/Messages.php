@@ -184,6 +184,32 @@ class ImageMessage extends BaseMessage {
     }
     
 }
+
+class VoiceMessage extends BaseMessage {
+	
+	public $voiceId;
+	public $url;
+	public $path;
+	
+	/**
+	 *
+	 * Voice message
+	 * One param must not be empty at least
+	 *
+	 * @param string $voiceId Id of voice
+	 * @param string $url Url of voice
+	 * @param string $path Path to voice
+	 *
+	 */
+	
+	public function __construct(string $voiceId = "",string $url = "",string $path = "") {
+		parent::__construct();
+		$this->type = "Voice";
+		$this->voiceId = $voiceId;
+		$this->url = $url;
+		$this->path = $path;
+	}
+}
 class FlashImageMessage extends ImageMessage {
     
     /**
