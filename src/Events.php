@@ -127,11 +127,9 @@ abstract class MessageEvent extends BaseEvent {
      *
      */
 
-    abstract public function quickReply($msg, bool $quote = false);
+    abstract public function quickReply($msg, bool $quote = false):int;
 }
 class GroupMessageEvent extends MessageEvent {
-	
-	public $group;
 	
 	/**
 	 * GroupMessageEvent
@@ -145,7 +143,6 @@ class GroupMessageEvent extends MessageEvent {
 	
 	public function __construct($obj, Bot &$bot) {
 		$this->sender = new GroupUser($obj->sender,$bot);
-		$this->group = $this->sender->getGroup();
 		parent::__construct($obj, $bot);
 	}
 	
@@ -158,7 +155,7 @@ class GroupMessageEvent extends MessageEvent {
      */
 
     public function getGroup(): Group {
-        return $this->group;
+        return $this->sender->getGroup();
     }
 	
 	/**
@@ -257,7 +254,7 @@ class FriendMessageEvent extends MessageEvent {
      *
      */
 
-    public function quickReply($msg, bool $quote = null) {
+    public function quickReply($msg, bool $quote = false):int {
     	$quote = $quote == true ? $this->getMessageChain()->getId() : null;
         return $this->_bot->sendFriendMessage($this->sender->getId(),$msg ,$quote);
     }
@@ -311,10 +308,11 @@ class TempMessageEvent extends MessageEvent {
      *
      */
 
-    public function quickReply($msg, bool $quote = false) {
+    public function quickReply($msg, bool $quote = false):int {
         $quote = $quote == true ? $this->getMessageChain()->getId(): -1;
         return $this->_bot->sendTempMessage($this->sender->getId(),$this->group->getId(),$msg,$quote);
     }
+    
     public function getSender(): PrivateUser {
         return $this->sender;
     }
@@ -486,7 +484,14 @@ abstract class RecallEvent extends BaseEvent {
 	public $authorId;
 	public $time;
 	
-	protected $_author;
+    protected $_author;
+    
+    public function __construct($obj, Bot &$bot) {
+        $this->messageId = $obj->messageId;
+        $this->authorId = $obj->authorId;
+        $this->time = $obj->time;
+        parent::__construct($obj,$bot);
+    }
 	
     /**
      *
@@ -765,9 +770,13 @@ class GroupMemberChangeEvent extends GroupEvent {
 class MemberCardChangeEvent extends GroupMemberChangeEvent {
 	public $operator;
 	public function __construct($obj, Bot &$bot) {
-		$this->operator = new GroupUser($obj->operator,$bot);
+		$this->operator = is_null($obj->operator) ? NULL : new GroupUser($obj->operator,$bot);
 		parent::__construct($obj, $bot);
-	}
+    }
+    
+    public function getOperator(){
+        return $this->operator;
+    }
 }
 class MemberSpecialTitleChangeEvent extends GroupMemberChangeEvent {}
 class MemberPermissionChangeEvent extends GroupMemberChangeEvent {}
@@ -779,7 +788,7 @@ class MemberMuteEvent extends GroupEvent {
 	
 	public function __construct($obj, Bot &$bot) {
 		$this->durationSeconds = $obj->durationSeconds;
-		$this->member = new GroupUser($obj->group,$bot);
+		$this->member = new GroupUser($obj->member,$bot);
 		$this->operator = new GroupUser($obj->operator,$bot);
 		parent::__construct($obj, $bot);
 	}
