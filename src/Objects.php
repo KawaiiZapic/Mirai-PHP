@@ -3,8 +3,9 @@
 namespace Mirai;
 
 use ArrayObject;
+use JsonSerializable;
 
-class MessageChain extends ArrayObject {
+class MessageChain extends ArrayObject implements JsonSerializable {
 	
 	/**
 	 * MessageChain constructor.
@@ -232,6 +233,10 @@ class MessageChain extends ArrayObject {
 				return false;
 		}
 		return true;
+	}
+
+	public function jsonSerialize() {
+		return (array)$this;
 	}
 }
 
