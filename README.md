@@ -25,7 +25,7 @@ use \Mirai\ImageMessage;
     $cli = new \Co\Http\Client($host,$port);
     $bot = new Bot($cli,$key,$qq);
     $bot->setEventHandler(function($event,$raw){
-    if($event instanceof GroupMessageEvent && $event->getMessageChain()->__toString() == ":steamsalty:" ) {
+    if($event instanceof GroupMessageEvent && (string)$event->getMessageChain() == ":steamsalty:" ) {
         $event->quickReply(new MessageChain([new ImageMessage("{A94288C3-AB52-28B0-FBE2-FA197B92A49E}.mirai")]));
     }
   });
