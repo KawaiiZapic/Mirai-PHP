@@ -5,8 +5,12 @@ A PHP SDK for Mirai based on Swoole + Coroutine &amp; PHP7+.
 对于API的实际使用检查与文档进一步补全正在进行,如果在实际使用过程中发现问题可以向我提交Issues报告.  
   
 ## 快速起步
+由于尚未正式发布,所以需要将`minimum-stability` 设置为`dev`.
+```
+composer require kawaiizapic/mirai-php
+```
 ```php
-# require_once "Bot.php" || "autoload.php";
+require_once "vendor/autoload.php";
 
 use \Mirai\Bot;
 use \Mirai\GroupMessageEvent;
