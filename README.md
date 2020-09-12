@@ -1,5 +1,34 @@
 # Mirai-PHP
-A PHP SDK for Mirai based on Swoole &amp; PHP7.
+A PHP SDK for Mirai based on Swoole + Coroutine &amp; PHP7+.
+
+## 目前大部分API都已经理论可用  
+对于API的实际使用检查与文档进一步补全正在进行,如果在实际使用过程中发现问题可以向我提交Issues报告.  
+  
+## 快速起步
+```php
+# require_once "Bot.php" || "autoload.php";
+
+use \Mirai\Bot;
+use \Mirai\GroupMessageEvent;
+use \Mirai\MessageChain;
+use \Mirai\ImageMessage;
+
+\Co\run(function(){
+  $host = "127.0.0.1";
+  $port = 8080;
+  $key = "HTTPAPIKEY";
+  $qq = 1234567890;
+    $cli = new \Co\Http\Client($host,$port);
+    $bot = new Bot($cli,$key,$qq);
+    $bot->setEventHandler(function($event,$raw){
+        if($event instanceof GroupMessageEvent && $event->getMessageChain()->__toString() == ":steamsalty:" ) {
+          $event->quickReply(new MessageChain([new ImageMessage("{A94288C3-AB52-28B0-FBE2-FA197B92A49E}.mirai")]));
+        }
+    });
+});
+```
+
+更多使用方法可以参看源码,源码拥有较为完整的注释.  
 
 ## Progress  
 * [x] 主体
@@ -22,6 +51,8 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
       * [ ] 被挤下线
       * [x] 被服务器断开或因网络问题而掉线
       * [x] 重新登录
+    * [ ] 禁言与解禁
+    * [ ] 
   * [x] 发送消息
     * [x] 好友消息
     * [x] 群消息
@@ -42,7 +73,7 @@ A PHP SDK for Mirai based on Swoole &amp; PHP7.
   * [ ] 消息与消息链
 
 ## 何时完成?  
-等死吧,这辈子都写不完的.
+快完了快完了(小声
 
 ## 需要一个像Mirai-Console的插件框架?
 Potabot是一个基于Swoole和本SDK的协程机器人框架,提供完整的插件管理/事件分发/数据存储/权限管理.
