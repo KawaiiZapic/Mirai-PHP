@@ -18,17 +18,17 @@ use \Mirai\MessageChain;
 use \Mirai\ImageMessage;
 
 \Co\run(function(){
-  $host = "127.0.0.1";
-  $port = 8080;
-  $key = "HTTPAPIKEY";
-  $qq = 1234567890;
+    $host = "127.0.0.1";
+    $port = 8080;
+    $key = "HTTPAPIKEY";
+    $qq = 1234567890;
     $cli = new \Co\Http\Client($host,$port);
     $bot = new Bot($cli,$key,$qq);
     $bot->setEventHandler(function($event,$raw){
-        if($event instanceof GroupMessageEvent && $event->getMessageChain()->__toString() == ":steamsalty:" ) {
-          $event->quickReply(new MessageChain([new ImageMessage("{A94288C3-AB52-28B0-FBE2-FA197B92A49E}.mirai")]));
-        }
-    });
+    if($event instanceof GroupMessageEvent && $event->getMessageChain()->__toString() == ":steamsalty:" ) {
+        $event->quickReply(new MessageChain([new ImageMessage("{A94288C3-AB52-28B0-FBE2-FA197B92A49E}.mirai")]));
+    }
+  });
 });
 ```
 
