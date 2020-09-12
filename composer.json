@@ -15,5 +15,10 @@
             "email": "zapic233@qq.com"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "Mirai\\": "src"
+        }
+    },
     "minimum-stability": "dev"
 }
