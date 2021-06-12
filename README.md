@@ -1,6 +1,6 @@
 # Mirai-PHP
-A PHP SDK for Mirai based on Swoole + Coroutine &amp; PHP8.  
-**目前项目正在使用PHP 8完全重写,如果需要使用旧版请切换分支到PHP_7**
+A PHP SDK for Mirai based on Swoole &amp; PHP8.  
+**目前项目正在使用PHP 8完全重写,新的SDK将使用go-cqhttp作为接口,如果需要使用旧版或者需要使用Mirai-APIHTTP请切换分支到PHP_7**
 
 ## Progress  
 * [ ] 主体
