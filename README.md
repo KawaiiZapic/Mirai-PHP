@@ -1,4 +1,6 @@
 # Mirai-PHP
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FKawaiiZapic%2FMirai-PHP.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FKawaiiZapic%2FMirai-PHP?ref=badge_shield)
+
 A PHP SDK for Mirai based on Swoole &amp; PHP8.  
 **目前项目正在使用PHP 8完全重写,新的SDK将使用go-cqhttp作为接口,如果需要使用旧版或者需要使用Mirai-APIHTTP请切换分支到PHP_7**
 
@@ -43,3 +45,6 @@ A PHP SDK for Mirai based on Swoole &amp; PHP8.
 ## 需要一个像Mirai-Console的插件框架?
 Potabot是一个基于Swoole和本SDK的协程机器人框架,提供完整的插件管理/事件分发/数据存储.  
 **但是她还在开发,需要等待本SDK不再快速迭代之后才能确保稳定**
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FKawaiiZapic%2FMirai-PHP.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FKawaiiZapic%2FMirai-PHP?ref=badge_large)
